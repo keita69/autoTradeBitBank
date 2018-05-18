@@ -7,7 +7,7 @@ install:
   - pip install pytest
   - pip install coveralls
 
-#script:
+script:
   - pytest src/bitbankAutoOrder.py
   - coverage run --source=src/bitbankAutoOrder.py test_src/test_bitbankAutoOrder.py
 
