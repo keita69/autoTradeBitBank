@@ -11,7 +11,7 @@ install:
 
 #script:
   - pytest bitbankAutoOrder.py
-#  - coverage run --source=hoge_test bitbankAutoOrder.py test
+  - coverage run --source=src/bitbankAutoOrder.py test_src/test_bitbankAutoOrder.py
 
 after_success:
   - coveralls
