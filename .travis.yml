@@ -10,7 +10,7 @@ install:
 script:
   - pytest src/bitbankAutoOrder.py
 #  - coverage run --source=src/bitbankAutoOrder.py test_src/test_bitbankAutoOrder.py
-  - coverage run src/test_bitbankAutoOrder.py
+  - coverage run src/bitbankAutoOrder.py
   
 after_success:
   - coveralls
