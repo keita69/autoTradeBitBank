@@ -1,1 +1,1 @@
-python ../src/bitbankAutoOrder.py
+print("HelloWorld")
