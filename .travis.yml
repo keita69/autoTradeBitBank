@@ -10,14 +10,11 @@ install:
   - pip install coveralls
 
 #script:
-  - pytest bitbankAutoOrder.py
+  - pytest src/bitbankAutoOrder.py
   - coverage run --source=src/bitbankAutoOrder.py test_src/test_bitbankAutoOrder.py
 
 after_success:
   - coveralls
 
-#notifications:
-#  slack:
-#    secure: your_token_key
 notifications:
    slack: keita69sawada:2gXpVEe11Q8bWXIYlTyDxv73
