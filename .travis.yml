@@ -10,7 +10,8 @@ install:
   - pip install coveralls
 
 #script:
-#  - coverage run --source=hoge_test setup.py test
+  - pytest bitbankAutoOrder.py
+#  - coverage run --source=hoge_test bitbankAutoOrder.py test
 
 after_success:
   - coveralls
