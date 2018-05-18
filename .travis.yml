@@ -4,11 +4,11 @@ python:
   - 3.5
 
 install:
-  - pip install pytest
+#  - pip install pytest
   - pip install coveralls
 
 script:
-  - pytest src/bitbankAutoOrder.py
+#  - pytest src/bitbankAutoOrder.py
 #  - coverage run --source=src/bitbankAutoOrder.py test_src/test_bitbankAutoOrder.py
   - coverage run src/bitbankAutoOrder.py
   
