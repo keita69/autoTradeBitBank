@@ -5,15 +5,18 @@ python:
   - 3.4
   - 3.5
 
-#install:
-#  - pip install coveralls
+install:
+  - pip install pytest
+  - pip install coveralls
 
 #script:
 #  - coverage run --source=hoge_test setup.py test
 
-#after_success:
-#  - coveralls
+after_success:
+  - coveralls
 
 #notifications:
 #  slack:
 #    secure: your_token_key
+notifications:
+   slack: keita69sawada:2gXpVEe11Q8bWXIYlTyDxv73
