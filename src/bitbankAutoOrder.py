@@ -115,14 +115,38 @@ class AutoOrder:
 
     def is_fully_filled(self, orderResult):
         """ 注文の約定を判定 """
+        last, _, _ = self.get_xrp_jpy_value()
+
+        side = orderResult["side"]
+        order_id = orderResult["order_id"]
+        pair = orderResult["pair"]
+        f_price = float(orderResult["price"])
+        f_start_amount = float(orderResult["remaining_amount"])      # 注文時の数量
+        f_remaining_amount = float(orderResult["remaining_amount"])  # 未約定の数量
+        f_executed_amount = float(orderResult["executed_amount"])   # 約定済み数量
+        f_last = float(last)
+
+        self.myLogger.debug("注文時の数量：{0:.0f}".format(f_start_amount))
         if (orderResult["status"] == "FULLY_FILLED"):
-            side = orderResult["side"]
-            order_id = orderResult["order_id"]
-            msg = (" ---> {0} 注文約定判定 ID{1}"
-                   .format(side, order_id))
-            self.myLogger.info(msg)
+            msg = ("{0} 注文 約定済：{1:.3f} 円 x {2:.0f}({3}) "
+                   "[現在:{4:.3f}円] ID：{5}")
+            self.myLogger.info(msg.format(side,
+                                          f_price,
+                                          f_executed_amount,
+                                          pair,
+                                          f_last,
+                                          order_id))
             return True
         else:
+            msg = ("{0} 注文 約定待ち：{1:.3f}円 x {2:.0f}({3}) "
+                   "[現在:{4:.3f}円] ID：{5} ")
+            self.myLogger.info(msg.format(side,
+                                          f_price,
+                                          f_remaining_amount,
+                                          pair,
+                                          f_last,
+                                          order_id))
+
             return False
 
     def get_buy_order_info(self):
@@ -216,7 +240,7 @@ class AutoOrder:
             last, _, _ = self.get_xrp_jpy_value()
 
             buy_orderResult = self.prvApi.get_order(
-                buyValue["pair"],  # ペア
+                buyValue["pair"],     # ペア
                 buyValue["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
             )
             f_buy_order_price = float(buy_order_info["price"])
@@ -229,8 +253,9 @@ class AutoOrder:
                            f_last,
                            buy_orderResult["status"]))
 
-            if(self.is_fully_filled(buy_orderResult)):  # 買い注文約定判定
-                break
+            while True:
+                if(self.is_fully_filled(buy_orderResult)):
+                    break
 
             if (self.is_buy_order_cancel(last, buy_orderResult)):
                 buyCanCelOrderResult = self.prvApi.cancel_order(
@@ -240,6 +265,11 @@ class AutoOrder:
                 msg = ("買い注文をキャンセル 注文ID:{0}"
                        .format(buyCanCelOrderResult["order_id"]))
                 self.myLogger.info(msg)
+
+                while True:
+                    if(self.is_fully_filled(buyCanCelOrderResult)):
+                        break
+
                 buy_orderResult = buyCanCelOrderResult
 
             return buy_orderResult
