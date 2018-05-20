@@ -260,7 +260,7 @@ class AutoOrder:
                     buy_orderResult["order_id"]  # 注文ID
                 )
                 msg = ("買い注文をキャンセル 注文ID:{0}"
-                       .format(buyCanCelOrderResult["order_id"]))
+                       .format(buy_orderResult["order_id"]))
                 self.myLogger.info(msg)
 
                 while True:
@@ -270,7 +270,7 @@ class AutoOrder:
 
                 buy_orderResult = buyCanCelOrderResult
 
-            return buy_orderResult
+        return buy_orderResult
 
     def sell_order(self, buy_orderResult):
         """ 売り注文処理 """
@@ -293,6 +293,18 @@ class AutoOrder:
                 sellValue["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
             )
 
+            # 売り注文約定判定
+            if (self.is_fully_filled(sell_order_result)):
+                f_amount = float(sell_order_result["executed_amount"])
+                f_sell = float(sell_order_result["price"])
+                f_buy = float(buy_orderResult["price"])
+                f_benefit = (f_sell - f_buy) * f_amount
+
+                lineMsg = ("売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP "
+                           .format(f_benefit, f_amount))
+                self.notify_line(lineMsg)
+                break
+
             if (self.is_stop_loss(sell_order_result)):  # 損切する場合
                 # 約定前の売り注文キャンセル
                 cancel_result = self.prvApi.cancel_order(
@@ -300,8 +312,10 @@ class AutoOrder:
                     sell_order_result["order_id"]  # 注文ID
                 )
 
-                if(self.is_fully_filled(cancel_result)):
-                    break
+                while True:
+                    time.sleep(self.POLLING_SEC_SELL)
+                    if(self.is_fully_filled(cancel_result)):
+                        break
 
                 msg = ("【損切】売り注文をキャンセル 注文ID:{0}"
                        .format(cancel_result["order_id"]))
@@ -348,18 +362,6 @@ class AutoOrder:
                     f_sell,
                     f_sell_start_amount,
                     f_last), "1", "104")
-
-            # 売り注文約定判定
-            if (self.is_fully_filled(sell_order_result)):
-                f_amount = float(sell_order_result["executed_amount"])
-                f_sell = float(sell_order_result["price"])
-                f_buy = float(buy_orderResult["price"])
-                f_benefit = (f_sell - f_buy) * f_amount
-
-                lineMsg = ("売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP "
-                           .format(f_benefit, f_amount))
-                self.notify_line(lineMsg)
-                break
 
         return buy_orderResult, sellValue
 
