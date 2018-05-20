@@ -7,6 +7,7 @@ import time
 import datetime
 import requests
 import logging
+from logging import getLogger, StreamHandler, DEBUG
 
 
 import python_bitbankcc
@@ -28,27 +29,32 @@ class MyLogger:
 
     def __init__(self):
         """ コンストラクタ """
-        self.mu = MyUtility()
+        # 参考：http://joemphilips.com/post/python_logging/
+        self.logger = getLogger(__name__)
+        self.handler = StreamHandler()
+        self.handler.setLevel(DEBUG)
+        self.logger.setLevel(DEBUG)
+        self.logger.addHandler(self.handler)
 
     def debug(self, msg):
         """ DEBUG	10	動作確認などデバッグの記録 """
-        print("{0}[DEBUG] {1}".format(self.mu.get_timestamp(), msg))
+        self.logger.debug(msg)
 
     def info(self, msg):
         """ INFO	20	正常動作の記録 """
-        print("{0}[INFO] {1}".format(self.mu.get_timestamp(), msg))
+        self.logger.info(msg)
 
     def warning(self, msg):
         """ WARNING	30	ログの定義名 """
-        print("{0}[WARNING] {1}".format(self.mu.get_timestamp(), msg))
+        self.logger.warning(msg)
 
     def error(self, msg):
         """ ERROR	40	エラーなど重大な問題 """
-        print("{0}[ERROR] {1}".format(self.mu.get_timestamp(), msg))
+        self.logger.error(msg)
 
     def critical(self, msg):
         """ CRITICAL	50	停止など致命的な問題 """
-        print("{0}[CRITICAL] {1}".format(self.mu.get_timestamp(), msg))
+        self.logger.critical(msg)
 
 
 class AutoOrder:
