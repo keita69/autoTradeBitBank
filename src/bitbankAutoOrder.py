@@ -129,6 +129,7 @@ class AutoOrder:
         f_last = float(last)
 
         # self.myLogger.debug("注文時の数量：{0:.0f}".format(f_start_amount))
+        result = False
         if (orderResult["status"] == "FULLY_FILLED"):
             msg = ("{0} 注文 約定済：{1:.3f} 円 x {2:.0f}({3}) "
                    "[現在:{4:.3f}円] ID：{5}")
@@ -138,7 +139,7 @@ class AutoOrder:
                                           pair,
                                           f_last,
                                           order_id))
-            return True
+            result = True
         else:
             msg = ("{0} 注文 約定待ち：{1:.3f}円 x {2:.0f}({3}) "
                    "[現在:{4:.3f}円] ID：{5} ")
@@ -148,8 +149,9 @@ class AutoOrder:
                                           pair,
                                           f_last,
                                           order_id))
-
-            return False
+        msg = "{0}注文約定判定結果：{1} ID：{2}"
+        self.myLogger.debug(msg.format(side, result, order_id))
+        return result
 
     def get_buy_order_info(self):
         """ 買い注文のリクエスト情報を取得 """
@@ -362,7 +364,7 @@ class AutoOrder:
         return buy_orderResult, sellValue
 
     def order_buy_sell(self):
-        """ 注文処理 """
+        """ 注文処理メイン（買い注文 → 売り注文） """
         buy_orderResult = self.buy_order()
         buy_orderResult, _ = self.sell_order(buy_orderResult)
 
@@ -394,8 +396,6 @@ class AutoOrder:
 if __name__ == '__main__':
     ao = AutoOrder()
 
-    # ao.get_balances()
-
     try:
         loop_cnt = 10
 
@@ -414,8 +414,10 @@ if __name__ == '__main__':
                 for i in range(len(activeOrders)):
                     ao.myLogger.debug(
                         "現在のオーダー一覧 :{0}".format(activeOrders[i]))
-                break
 
+                break  # Mainループブレイク
+
+        ao.get_balances()
         ao.notify_line_stamp("自動売買が終了！処理回数：{0}回".format(i + 1), "2", "516")
 
     except KeyboardInterrupt as ki:
