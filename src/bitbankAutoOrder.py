@@ -302,6 +302,7 @@ class AutoOrder:
 
                 lineMsg = ("売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP "
                            .format(f_benefit, f_amount))
+                self.myLogger.debug(lineMsg)
                 self.notify_line(lineMsg)
                 break
 
