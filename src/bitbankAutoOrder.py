@@ -402,9 +402,9 @@ class AutoOrder:
             payload = {'message': message,
                        'stickerPackageId': stickerPackageId,
                        'stickerId': stickerId}
-            headers = {'Authorization': 'Bearer ' +
-                       self.line_notify_token}  # 発行したトークン
 
+        headers = {'Authorization': 'Bearer ' +
+                   self.line_notify_token}  # 発行したトークン
         return requests.post(line_notify_api, data=payload, headers=headers)
 
 
