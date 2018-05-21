@@ -60,9 +60,10 @@ class MyLogger:
 class AutoOrder:
     def __init__(self):
         """ コンストラクタ """
+        self.LOOP_COUNT_MAIN = 1
         self.BUY_ORDER_RANGE = 0.0
         self.SELL_ORDER_RANGE = 0.1
-        self.POLLING_SEC_MAIN = 0.1
+        self.POLLING_SEC_MAIN = 15
         self.POLLING_SEC_BUY = 0.1
         self.POLLING_SEC_SELL = 0.1
 
@@ -155,8 +156,6 @@ class AutoOrder:
                                           pair,
                                           f_last,
                                           order_id))
-        msg = "{0}注文約定判定結果：{1} ID：{2}"
-        self.myLogger.debug(msg.format(side, result, order_id))
         return result
 
     def get_buy_order_info(self):
@@ -265,13 +264,13 @@ class AutoOrder:
                     buy_orderResult["pair"],     # ペア
                     buy_orderResult["order_id"]  # 注文ID
                 )
-                msg = ("買い注文をキャンセル 注文ID:{0}"
-                       .format(buy_orderResult["order_id"]))
-                self.myLogger.info(msg)
 
                 while True:
                     time.sleep(self.POLLING_SEC_BUY)
                     if(self.is_fully_filled(buyCanCelOrderResult)):
+                        msg = ("買い注文をキャンセル 注文ID:{0}"
+                               .format(buy_orderResult["order_id"]))
+                        self.myLogger.info(msg)
                         break
 
                 buy_orderResult = buyCanCelOrderResult
@@ -306,10 +305,10 @@ class AutoOrder:
                 f_buy = float(buy_orderResult["price"])
                 f_benefit = (f_sell - f_buy) * f_amount
 
-                lineMsg = ("売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP "
-                           .format(f_benefit, f_amount))
-                self.myLogger.debug(lineMsg)
-                self.notify_line(lineMsg)
+                line_msg = ("売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP "
+                            .format(f_benefit, f_amount))
+                self.notify_line(line_msg)
+                self.myLogger.debug(line_msg)
                 break
 
             if (self.is_stop_loss(sell_order_result)):  # 損切する場合
@@ -322,6 +321,9 @@ class AutoOrder:
                 while True:
                     time.sleep(self.POLLING_SEC_SELL)
                     if(self.is_fully_filled(cancel_result)):
+                        msg = ("売り注文をキャンセル 注文ID:{0}"
+                               .format(sell_order_result["order_id"]))
+                        self.myLogger.info(msg)
                         break
 
                 msg = ("【損切】売り注文をキャンセル 注文ID:{0}"
@@ -349,22 +351,23 @@ class AutoOrder:
                 f_sell_start_amount = float(sell_amount)
                 f_loss = (f_sell - f_buy) * f_buy_amount
                 f_last = last
-                msg = ("【損切】売り注文 (ID:{0})"
-                       " [{1:.3f}円 x {2:.0f}XRP]を行いました。[現在値：{3:.3f}円] ")
-                self.myLogger.info(msg.format(
-                    sell_by_market_result["order_id"],
-                    f_loss,
-                    f_sell_start_amount,
-                    f_last))
 
                 while True:
                     time.sleep(self.POLLING_SEC_SELL)
                     if(self.is_fully_filled(sell_by_market_result)):
+                        msg = ("【損切】売り注文 (ID:{0})"
+                               " [{1:.3f}円 x {2:.0f}XRP]を行いました。"
+                               "[現在値：{3:.3f}円] ")
+                        self.myLogger.info(msg.format(
+                            sell_by_market_result["order_id"],
+                            f_loss,
+                            f_sell_start_amount,
+                            f_last))
                         break
 
-                msg = ("【損切】売り注文[成行] (ID:{0})"
-                       " [{1:.3f}円 x {2:.0f}XRP]を行いました。[現在値：{3:.3f}円] ")
-                self.notify_line_stamp(msg.format(
+                line_msg = ("【損切】売り注文[成行] (ID:{0})"
+                            " [{1:.3f}円 x {2:.0f}XRP]を行いました。[現在値：{3:.3f}円] ")
+                self.notify_line_stamp(line_msg.format(
                     sell_by_market_result["order_id"],
                     f_sell,
                     f_sell_start_amount,
@@ -406,9 +409,7 @@ if __name__ == '__main__':
     ao = AutoOrder()
 
     try:
-        loop_cnt = 10
-
-        for i in range(0, loop_cnt):
+        for i in range(0, ao.LOOP_COUNT_MAIN):
             ao.myLogger.info("#############################################")
             ao.myLogger.info("=== 実験[NO.{0}] ===".format(i))
             ao.order_buy_sell()
