@@ -125,7 +125,7 @@ class AutoOrder:
         activeOrders = self.prvApi.get_active_orders('xrp_jpy')
         return activeOrders
 
-    def is_fully_filled(self, orderResult):
+    def is_fully_filled(self, orderResult, threshold_price):
         """ 注文の約定を判定 """
         last, _, _ = self.get_xrp_jpy_value()
 
@@ -133,31 +133,34 @@ class AutoOrder:
         order_id = orderResult["order_id"]
         pair = orderResult["pair"]
         f_price = float(orderResult["price"])
-        # f_start_amount = float(orderResult["remaining_amount"])      # 注文時の数量
+        # f_start_amount = float(orderResult["remaining_amount"])    # 注文時の数量
         f_remaining_amount = float(orderResult["remaining_amount"])  # 未約定の数量
-        f_executed_amount = float(orderResult["executed_amount"])   # 約定済み数量
+        f_executed_amount = float(orderResult["executed_amount"])    # 約定済み数量
+        f_threshold_price = float(threshold_price)  # buy:買直し sell:損切 価格
         f_last = float(last)
 
         # self.myLogger.debug("注文時の数量：{0:.0f}".format(f_start_amount))
         result = False
         if (orderResult["status"] == "FULLY_FILLED"):
             msg = ("{0} 注文 約定済：{1:.3f} 円 x {2:.0f}({3}) "
-                   "[現在:{4:.3f}円] ID：{5}")
+                   "[現在:{4:.3f}円] [閾価格]：{5:.3f} ID：{6}")
             self.myLogger.info(msg.format(side,
                                           f_price,
                                           f_executed_amount,
                                           pair,
                                           f_last,
+                                          f_threshold_price,
                                           order_id))
             result = True
         else:
             msg = ("{0} 注文 約定待ち：{1:.3f}円 x {2:.0f}({3}) "
-                   "[現在:{4:.3f}円] ID：{5} ")
+                   "[現在:{4:.3f}円] [閾価格]：{5:.3f} ID：{6}")
             self.myLogger.info(msg.format(side,
                                           f_price,
                                           f_remaining_amount,
                                           pair,
                                           f_last,
+                                          f_threshold_price,
                                           order_id))
         return result
 
@@ -221,19 +224,28 @@ class AutoOrder:
         THRESHOLD = 10  # 閾値
         return f_sell_order_price - (self.SELL_ORDER_RANGE * THRESHOLD)
 
-    def is_buy_order_cancel(self, last, buy_orderStatus):
+    def is_buy_order_cancel(self, buy_order_result):
         """ 買い注文のキャンセル判定 """
-        f_buy_order_price = float(buy_orderStatus["price"])
-        f_last = float(last)
-        THRESHOLD = 0.5  # 再買い注文するための閾値
+        last, _, _ = self.get_xrp_jpy_value()
+        f_last = float(last)  # 現在値
 
-        if (f_last - f_buy_order_price > THRESHOLD):
-            msg = ("現在値：{0} 買い注文価格：{1} 再注文するための閾値：{2}"
-                   .format(f_last, f_buy_order_price, THRESHOLD))
+        f_buy_order_price = float(buy_order_result["price"])
+        f_last = float(last)
+        f_buy_cancel_price = float(self.get_buy_cancel_price(buy_order_result))
+
+        if (f_last > f_buy_cancel_price):
+            msg = ("現在値：{0:.3f} 買い注文価格：{1:.3f} 再注文価格：{2:.3f}"
+                   .format(f_last, f_buy_order_price, f_buy_cancel_price))
             self.myLogger.debug(msg)
             return True
         else:
             return False
+
+    def get_buy_cancel_price(self, buy_order_result):
+        """ 買い注文 キャンセル 価格 """
+        f_buy_order_price = float(buy_order_result["price"])
+        THRESHOLD = 0.5  # 再買い注文するための閾値
+        return THRESHOLD + f_buy_order_price
 
     def buy_order(self):
         """ 買い注文処理 """
@@ -250,37 +262,39 @@ class AutoOrder:
         while True:
             time.sleep(self.POLLING_SEC_BUY)
 
-            last, _, _ = self.get_xrp_jpy_value()
-
             # 買い注文結果を取得
-            buy_orderResult = self.prvApi.get_order(
+            buy_order_result = self.prvApi.get_order(
                 buyValue["pair"],     # ペア
                 buyValue["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
             )
 
             # 買い注文の約定判定
-            if(self.is_fully_filled(buy_orderResult)):
+            buy_cancel_price = self.get_buy_cancel_price(buy_order_result)
+            if(self.is_fully_filled(buy_order_result, buy_cancel_price)):
                 break
 
-            if (self.is_buy_order_cancel(last, buy_orderResult)):
-                buyCanCelOrderResult = self.prvApi.cancel_order(
-                    buy_orderResult["pair"],     # ペア
-                    buy_orderResult["order_id"]  # 注文ID
+            if (self.is_buy_order_cancel(buy_order_result)):
+                buy_cancel_order_result = self.prvApi.cancel_order(
+                    buy_order_result["pair"],     # ペア
+                    buy_order_result["order_id"]  # 注文ID
                 )
 
                 while True:
                     time.sleep(self.POLLING_SEC_BUY)
-                    if(self.is_fully_filled(buyCanCelOrderResult)):
+                    buy_cancel_price = self.get_buy_cancel_price(
+                        buy_cancel_order_result)
+                    if(self.is_fully_filled(buy_cancel_order_result,
+                                            buy_cancel_price)):
                         msg = ("買い注文をキャンセル 注文ID:{0}"
-                               .format(buy_orderResult["order_id"]))
+                               .format(buy_order_result["order_id"]))
                         self.myLogger.info(msg)
                         break
 
-                buy_orderResult = buyCanCelOrderResult
+                buy_order_result = buy_cancel_order_result
 
-        return buy_orderResult
+        return buy_order_result
 
-    def sell_order(self, buy_orderResult):
+    def sell_order(self, buy_order_result):
         """ 売り注文処理 """
         sell_order_info = self.get_sell_order_info()
         sellValue = self.prvApi.order(
@@ -301,11 +315,12 @@ class AutoOrder:
                 sellValue["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
             )
 
-            # 売り注文約定判定
-            if (self.is_fully_filled(sell_order_result)):
+            stop_loss_price = self.get_stop_loss_price(sell_order_result)
+            if (self.is_fully_filled(sell_order_result,
+                                     stop_loss_price)):  # 売り注文約定判定
                 f_amount = float(sell_order_result["executed_amount"])
                 f_sell = float(sell_order_result["price"])
-                f_buy = float(buy_orderResult["price"])
+                f_buy = float(buy_order_result["price"])
                 f_benefit = (f_sell - f_buy) * f_amount
 
                 line_msg = ("売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP "
@@ -314,6 +329,7 @@ class AutoOrder:
                 self.myLogger.debug(line_msg)
                 break
 
+            stop_loss_price = self.get_stop_loss_price(sell_order_result)
             if (self.is_stop_loss(sell_order_result)):  # 損切する場合
                 # 約定前の売り注文キャンセル
                 cancel_result = self.prvApi.cancel_order(
@@ -323,7 +339,7 @@ class AutoOrder:
 
                 while True:
                     time.sleep(self.POLLING_SEC_SELL)
-                    if(self.is_fully_filled(cancel_result)):
+                    if(self.is_fully_filled(cancel_result, stop_loss_price)):
                         msg = ("売り注文をキャンセル 注文ID:{0}"
                                .format(sell_order_result["order_id"]))
                         self.myLogger.info(msg)
@@ -348,8 +364,8 @@ class AutoOrder:
                 )
 
                 f_sell = float(sell_by_market_result["price"])
-                f_buy = float(buy_orderResult["price"])
-                f_buy_amount = float(buy_orderResult["executed_amount"])
+                f_buy = float(buy_order_result["price"])
+                f_buy_amount = float(buy_order_result["executed_amount"])
                 sell_amount = sell_by_market_result["start_amount"]
                 f_sell_start_amount = float(sell_amount)
                 f_loss = (f_sell - f_buy) * f_buy_amount
@@ -357,7 +373,8 @@ class AutoOrder:
 
                 while True:
                     time.sleep(self.POLLING_SEC_SELL)
-                    if(self.is_fully_filled(sell_by_market_result)):
+                    if(self.is_fully_filled(sell_by_market_result,
+                                            stop_loss_price)):
                         msg = ("【損切】売り注文 (ID:{0})"
                                " [{1:.3f}円 x {2:.0f}XRP]を行いました。"
                                "[現在値：{3:.3f}円] ")
@@ -376,12 +393,12 @@ class AutoOrder:
                     f_sell_start_amount,
                     f_last), "1", "104")
 
-        return buy_orderResult, sellValue
+        return buy_order_result, sellValue
 
     def order_buy_sell(self):
         """ 注文処理メイン（買い注文 → 売り注文） """
-        buy_orderResult = self.buy_order()
-        buy_orderResult, _ = self.sell_order(buy_orderResult)
+        buy_order_result = self.buy_order()
+        buy_order_result, _ = self.sell_order(buy_order_result)
 
     def notify_line(self, message):
         """ LINE通知（messageのみ） """
