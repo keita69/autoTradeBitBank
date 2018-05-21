@@ -382,7 +382,7 @@ class AutoOrder:
 
     def notify_line(self, message):
         """ LINE通知（messageのみ） """
-        self.notify_line_stamp(message, "", "")
+        return self.notify_line_stamp(message, "", "")
 
     def notify_line_stamp(self, message, stickerPackageId, stickerId):
         """ LINE通知（スタンプ付き）
@@ -393,7 +393,7 @@ class AutoOrder:
 
         message = "{0}  {1}".format(self.mu.get_timestamp(), message)
 
-        if(bool(stickerPackageId == "") or bool(stickerId == "")):
+        if(stickerPackageId == "" or stickerId == ""):
             payload = {'message': message}
         else:
             payload = {'message': message,
@@ -401,7 +401,8 @@ class AutoOrder:
                        'stickerId': stickerId}
             headers = {'Authorization': 'Bearer ' +
                        self.line_notify_token}  # 発行したトークン
-            _ = requests.post(line_notify_api, data=payload, headers=headers)
+
+        return requests.post(line_notify_api, data=payload, headers=headers)
 
 
 # main
