@@ -60,7 +60,7 @@ class MyLogger:
 class AutoOrder:
     def __init__(self):
         """ コンストラクタ """
-        self.LOOP_COUNT_MAIN = 1
+        self.LOOP_COUNT_MAIN = 10
         self.BUY_ORDER_RANGE = 0.0
         self.SELL_ORDER_RANGE = 0.1
         self.POLLING_SEC_MAIN = 15
