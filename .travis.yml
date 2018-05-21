@@ -3,6 +3,12 @@ language: python
 python:
   - 3.5
 
+env:
+  global:
+    export BITBANK_API_KEY=dummy
+    export BITBANK_API_SECRET=dummy
+    export LINE_NOTIFY_TOKEN=vN1Xb3g1wviVaBvENb2OfZU40kUaJyBcAbTWeN6xuQM
+
 install:
 #  - pip install pytest
   - pip install pep8
