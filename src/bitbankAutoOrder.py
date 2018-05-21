@@ -431,8 +431,8 @@ if __name__ == '__main__':
 
     except KeyboardInterrupt as ki:
         ao.notify_line_stamp("自動売買が中断されました 詳細：{0}".format(ki), "1", "3")
-    except BaseException as e:
-        ao.notify_line_stamp("システムエラーが発生しました！ 詳細：{0}".format(e), "1", "17")
-        raise e
+    except BaseException as be:
+        ao.notify_line_stamp("システムエラーが発生しました！ 詳細：{0}".format(be), "1", "17")
+        raise BaseException
 
     sys.exit()
