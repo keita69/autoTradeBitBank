@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import pytest
 import bitbankAutoOrder
 
 
-def test_1():
+def test_notify_line():
     ao = bitbankAutoOrder.AutoOrder()
-    ao.notify_line("LINEメッセージテスト")
-    ao.notify_line_stamp("LINEメッセージテスト", "2", "179")
+    http_status = ao.notify_line("LINEメッセージテスト")
+    assert http_status == "200"
+
+    ao.notify_line_stamp("LINEスタンプテスト", "2", "179")
+    assert http_status == "200"
