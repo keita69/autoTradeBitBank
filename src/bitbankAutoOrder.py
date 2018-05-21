@@ -393,7 +393,7 @@ class AutoOrder:
 
         message = "{0}  {1}".format(self.mu.get_timestamp(), message)
 
-        if((stickerPackageId == "") or (stickerId == "")):
+        if(bool(stickerPackageId == "") or bool(stickerId == "")):
             payload = {'message': message}
         else:
             payload = {'message': message,
