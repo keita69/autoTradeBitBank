@@ -15,13 +15,25 @@ import python_bitbankcc
 from datetime import datetime, timedelta, timezone
 
 
-class MyUtility:
+class MyUtil:
     """ 処理に依存しない自分専用のユーティリティクラス """
 
     def get_timestamp(self):
         """ JSTのタイムスタンプを取得する """
         JST = timezone(timedelta(hours=+9), 'JST')
         return datetime.now(JST).strftime('%Y/%m/%d %H:%M:%S')
+
+
+class MyTechnicalAnalysisUtil:
+    """ テクニカル分析のユーティリティクラス
+    https://www.rakuten-sec.co.jp/MarketSpeed/onLineHelp/msman2_5_1_2.html
+    """
+
+    def get_rsi(self):
+        """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
+        計算式：RSI＝直近N日間の上げ幅合計の絶対値/（直近N日間の上げ幅合計の絶対値＋下げ幅合計の絶対値）×100
+        """
+        pass
 
 
 class MyLogger:
@@ -77,7 +89,7 @@ class AutoOrder:
 
         self.check_env()
 
-        self.mu = MyUtility()
+        self.mu = MyUtil()
 
         self.pubApi = python_bitbankcc.public()
         self.prvApi = python_bitbankcc.private(self.api_key, self.api_secret)
