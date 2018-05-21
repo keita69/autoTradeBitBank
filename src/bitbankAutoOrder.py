@@ -35,6 +35,9 @@ class MyLogger:
         self.handler.setLevel(DEBUG)
         self.logger.setLevel(DEBUG)
         self.logger.addHandler(self.handler)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name) - %(Levelname)s - %(message)s')
+        self.handler.setFormatter(formatter)
 
     def debug(self, msg):
         """ DEBUG	10	動作確認などデバッグの記録 """
