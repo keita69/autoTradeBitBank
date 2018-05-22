@@ -6,6 +6,7 @@ import traceback
 import time
 import datetime
 import requests
+import pandas
 import logging
 from logging import getLogger, StreamHandler, DEBUG
 
@@ -13,6 +14,10 @@ from logging import getLogger, StreamHandler, DEBUG
 import python_bitbankcc
 
 from datetime import datetime, timedelta, timezone
+
+
+class CANDLE_TYPE(Enum):
+    """ ロウソクのタイプ（範囲）を定義 """
 
 
 class MyUtil:
@@ -27,13 +32,61 @@ class MyUtil:
 class MyTechnicalAnalysisUtil:
     """ テクニカル分析のユーティリティクラス
     https://www.rakuten-sec.co.jp/MarketSpeed/onLineHelp/msman2_5_1_2.html
+
+    PRAM:
+        n: 対象データ数(5とか14くらいが良いとされる)
+        cadle_type: "1min","5min","15min","30min","1hour"のいづれか。
     """
 
-    def get_rsi(self):
+    def get_rsi(self, n, cadle_type):
         """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
         計算式：RSI＝直近N日間の上げ幅合計の絶対値/（直近N日間の上げ幅合計の絶対値＋下げ幅合計の絶対値）×100
+        参考
+        http://www.algo-fx-blog.com/rsi-python-ml-features/
         """
-        pass
+        yyyymmdd = datetime.now().strftime('%Y%m%d')
+        candlestick = self.pubApi.get_candlestick(
+            "xrp_jpy", candle_type, yyyymmdd)
+
+        ohlcv = candlestick["candlestick"][0]["ohlcv"]
+        df_ohlcv = pandas.DataFrame(ohlcv,
+                                    columns=["open",   # 始値
+                                             "hight",   # 高値
+                                             "low",     # 安値
+                                             "close",     # 終値
+                                             "amount",  # 出来高
+                                             "time"])   # UnixTime
+
+        if(len(ohlcv) <= n):  # データが不足している場合
+            yesterday = (datetime.now() - datetime.timedelta(days=1))
+            str_yesterday = yesterday.strftime('%Y%m%d')
+            yday_candlestick = self.pubApi.get_candlestick(
+                "xrp_jpy", candle_type, str_yesterday)
+            yday_ohlcv = yday_candlestick["candlestick"][0]["ohlcv"]
+            df_yday_ohlcv = pandas.DataFrame(yday_ohlcv,
+                                             columns=["open",   # 始値
+                                                      "hight",   # 高値
+                                                      "low",     # 安値
+                                                      "close",     # 終値
+                                                      "amount",  # 出来高
+                                                      "time"])   # UnixTime
+            df_ohlcv.append(df_yday_ohlcv, ignore_index=True)  # 前日分追加
+
+        df_close = df_ohlcv["close"].astype('float')
+        df_diff = df_close.diff()
+
+        # 値上がり幅、値下がり幅をシリーズへ切り分け
+        up, down = df_diff.copy(), df_diff.copy()
+        up[up < 0] = 0
+        down[down > 0] = 0
+
+        up_sma_n = up.rolling(window=n, center=False).mean()  # mean:平均を計算
+        down_sma_n = down.abs().rolling(window=n, center=False).mean()
+
+        df_rs = up_sma_n / down_sma_n
+        df_rsi = 100.0 - (100.0 / (1.0 + df_rs))
+
+        return df_rsi[-1:]  # 最新のRSIを返却（最終行）
 
 
 class MyLogger:
