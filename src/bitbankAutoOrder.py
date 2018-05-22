@@ -33,11 +33,12 @@ class MyTechnicalAnalysisUtil:
         n: 対象データ数(5とか14くらいが良いとされる)
         cadle_type: "1min","5min","15min","30min","1hour"のいづれか。
     """
+
     def __init__(self):
         """ コンストラクタ """
         self.pubApi = python_bitbankcc.public()
 
-    def get_rsi(self, n, candle_type):
+    def get_rsi(self, n: int, candle_type):
         """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
         計算式：RSI＝直近N日間の上げ幅合計の絶対値/（直近N日間の上げ幅合計の絶対値＋下げ幅合計の絶対値）×100
         参考
@@ -100,7 +101,7 @@ class MyLogger:
         self.logger.setLevel(DEBUG)
         self.logger.addHandler(self.handler)
         formatter = logging.Formatter(
-            '%(asctime)s - %(name) - %(Levelname)s - %(message)s')
+            '%(asctime)s - %(name) - %(levelname)s - %(message)s')
         self.handler.setFormatter(formatter)
 
     def debug(self, msg):
@@ -142,6 +143,7 @@ class AutoOrder:
         self.check_env()
 
         self.mu = MyUtil()
+        self.mtau = MyTechnicalAnalysisUtil()
 
         self.pubApi = python_bitbankcc.public()
         self.prvApi = python_bitbankcc.private(self.api_key, self.api_secret)
@@ -288,6 +290,23 @@ class AutoOrder:
         THRESHOLD = 10  # 閾値
         return f_sell_order_price - (self.SELL_ORDER_RANGE * THRESHOLD)
 
+    def is_buy_order(self):
+        """ 買い注文の判定 """
+        f_rsi = float(self.mtau.get_rsi(14, "1min"))
+
+        last, _, _ = self.get_xrp_jpy_value()
+        f_last = float(last)  # 現在値
+
+        RSI_THRESHOLD = 40
+        msg = ("買い注文待ち 現在値：{0:.3f} RSI：{1:.3f} RSI閾値：{2}"
+               .format(f_last, f_rsi, RSI_THRESHOLD))
+        self.myLogger.debug(msg)
+
+        if(f_rsi < RSI_THRESHOLD):
+            return True
+
+        return False
+
     def is_buy_order_cancel(self, buy_order_result):
         """ 買い注文のキャンセル判定 """
         last, _, _ = self.get_xrp_jpy_value()
@@ -313,14 +332,20 @@ class AutoOrder:
 
     def buy_order(self):
         """ 買い注文処理 """
-        buy_order_info = self.get_buy_order_info()
+        while True:
+            time.sleep(self.POLLING_SEC_BUY)
 
-        buyValue = self.prvApi.order(
+            if(self.is_buy_order()):
+                break
+
+        buy_order_info = self.get_buy_order_info()
+        buy_value = self.prvApi.order(
             buy_order_info["pair"],  # ペア
             buy_order_info["price"],  # 価格
             buy_order_info["amount"],  # 注文枚数
             buy_order_info["orderSide"],  # 注文サイド 売 or 買(buy or sell)
-            buy_order_info["orderType"]  # 注文タイプ 指値 or 成行(limit or market))
+            # 注文タイプ 指値 or 成行(limit or market))
+            buy_order_info["orderType"]
         )
 
         while True:
@@ -328,8 +353,8 @@ class AutoOrder:
 
             # 買い注文結果を取得
             buy_order_result = self.prvApi.get_order(
-                buyValue["pair"],     # ペア
-                buyValue["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
+                buy_value["pair"],     # ペア
+                buy_value["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
             )
 
             # 買い注文の約定判定
