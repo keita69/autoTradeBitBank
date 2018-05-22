@@ -2,6 +2,7 @@
 
 import pytest
 import bitbankAutoOrder
+import python_bitbankcc
 
 
 def test_notify_line():
