@@ -85,7 +85,7 @@ class MyTechnicalAnalysisUtil:
         df_rs = up_sma_n / down_sma_n
         df_rsi = 100.0 - (100.0 / (1.0 + df_rs))
 
-        return df_rsi[-1:]  # 最新のRSIを返却（最終行）
+        return df_rsi[-1:].values.tolist()[0]  # 最新のRSIを返却（最終行）
 
 
 class MyLogger:
