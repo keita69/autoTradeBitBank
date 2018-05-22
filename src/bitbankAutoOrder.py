@@ -16,10 +16,6 @@ import python_bitbankcc
 from datetime import datetime, timedelta, timezone
 
 
-class CANDLE_TYPE(Enum):
-    """ ロウソクのタイプ（範囲）を定義 """
-
-
 class MyUtil:
     """ 処理に依存しない自分専用のユーティリティクラス """
 
