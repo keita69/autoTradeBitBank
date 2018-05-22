@@ -33,8 +33,11 @@ class MyTechnicalAnalysisUtil:
         n: 対象データ数(5とか14くらいが良いとされる)
         cadle_type: "1min","5min","15min","30min","1hour"のいづれか。
     """
+    def __init__(self):
+        """ コンストラクタ """
+        self.pubApi = python_bitbankcc.public()
 
-    def get_rsi(self, n, cadle_type):
+    def get_rsi(self, n, candle_type):
         """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
         計算式：RSI＝直近N日間の上げ幅合計の絶対値/（直近N日間の上げ幅合計の絶対値＋下げ幅合計の絶対値）×100
         参考
