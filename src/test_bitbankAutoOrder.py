@@ -15,6 +15,6 @@ def test_notify_line():
 
 def test_get_rsi():
     mtau = bitbankAutoOrder.MyTechnicalAnalysisUtil()
-    rsi = mtau.get_rsi(self, 14, "1min")
+    rsi = mtau.get_rsi(14, "1min")
     assert rsi >= 0
     assert rsi <= 100
