@@ -426,7 +426,7 @@ class AutoOrder:
         )
 
         self.notify_line(("デバッグ 売り注文処理発生！！ ID：{0}")
-                         .format(sell_by_market_result["order_id"]))
+                         .format(sell_order_result["order_id"]))
 
         while True:
             time.sleep(self.POLLING_SEC_SELL)
