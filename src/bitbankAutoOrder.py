@@ -381,16 +381,16 @@ class AutoOrder:
         self.notify_line(("デバッグ 買い注文処理発生！！ ID：{0}")
                          .format(buy_value["order_id"]))
 
-        # 買い注文結果を取得
-        buy_order_result = self.prvApi.get_order(
-            buy_value["pair"],     # ペア
-            buy_value["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
-        )
-        buy_cancel_price = self.get_buy_cancel_price(buy_order_result)
-
         # 買い注文約定待ち
         while True:
             time.sleep(self.POLLING_SEC_BUY)
+
+            # 買い注文結果を取得
+            buy_order_result = self.prvApi.get_order(
+                buy_value["pair"],     # ペア
+                buy_value["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
+            )
+            buy_cancel_price = self.get_buy_cancel_price(buy_order_result)
 
             # 買い注文の約定判定
             if(self.is_fully_filled(buy_order_result, buy_cancel_price)):
@@ -425,24 +425,24 @@ class AutoOrder:
             sell_order_info["orderType"]   # 注文タイプ 指値 or 成行(limit or market))
         )
 
-        sell_order_result = self.prvApi.get_order(
-            sell_order_result["pair"],     # ペア
-            sell_order_result["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
-        )
-
         self.notify_line(("デバッグ 売り注文処理発生！！ ID：{0}")
                          .format(sell_by_market_result["order_id"]))
 
         while True:
             time.sleep(self.POLLING_SEC_SELL)
 
+            sell_order_status = self.prvApi.get_order(
+                sell_order_result["pair"],     # ペア
+                sell_order_result["order_id"]  # 注文タイプ 指値 or 成行
+            )
+
             last, _, _ = self.get_xrp_jpy_value()
 
-            stop_loss_price = self.get_stop_loss_price(sell_order_result)
-            if (self.is_fully_filled(sell_order_result,
+            stop_loss_price = self.get_stop_loss_price(sell_order_status)
+            if (self.is_fully_filled(sell_order_status,
                                      stop_loss_price)):  # 売り注文約定判定
-                f_amount = float(sell_order_result["executed_amount"])
-                f_sell = float(sell_order_result["price"])
+                f_amount = float(sell_order_status["executed_amount"])
+                f_sell = float(sell_order_status["price"])
                 f_buy = float(buy_order_result["price"])
                 f_benefit = (f_sell - f_buy) * f_amount
 
@@ -452,16 +452,16 @@ class AutoOrder:
                 self.myLogger.debug(line_msg)
                 break
 
-            stop_loss_price = self.get_stop_loss_price(sell_order_result)
-            if (self.is_stop_loss(sell_order_result)):  # 損切する場合
+            stop_loss_price = self.get_stop_loss_price(sell_order_status)
+            if (self.is_stop_loss(sell_order_status)):  # 損切する場合
                 # 約定前の売り注文キャンセル
                 cancel_result = self.prvApi.cancel_order(
-                    sell_order_result["pair"],     # ペア
-                    sell_order_result["order_id"]  # 注文ID
+                    sell_order_status["pair"],     # ペア
+                    sell_order_status["order_id"]  # 注文ID
                 )
 
                 # 売り注文（成行）で損切
-                amount = sell_order_result["start_amount"]
+                amount = sell_order_status["start_amount"]
                 price = stop_loss_price  # 成行なので指定しても意味なし？
                 sell_order_info_by_market = self.get_sell_order_info_by_barket(
                     amount, price)
