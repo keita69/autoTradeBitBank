@@ -332,12 +332,15 @@ class AutoOrder:
 
     def buy_order(self):
         """ 買い注文処理 """
+
+        # 買うタイミングを待つ
         while True:
             time.sleep(self.POLLING_SEC_BUY)
 
             if(self.is_buy_order()):
                 break
 
+        # 買い注文処理
         buy_order_info = self.get_buy_order_info()
         buy_value = self.prvApi.order(
             buy_order_info["pair"],  # ペア
@@ -348,20 +351,25 @@ class AutoOrder:
             buy_order_info["orderType"]
         )
 
+        self.notify_line(("デバッグ 買い注文(損切)処理発生！！ ID：{0}")
+                         .format(buy_value["order_id"]))
+
+        # 買い注文結果を取得
+        buy_order_result = self.prvApi.get_order(
+            buy_value["pair"],     # ペア
+            buy_value["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
+        )
+        buy_cancel_price = self.get_buy_cancel_price(buy_order_result)
+
+        # 買い注文約定待ち
         while True:
             time.sleep(self.POLLING_SEC_BUY)
 
-            # 買い注文結果を取得
-            buy_order_result = self.prvApi.get_order(
-                buy_value["pair"],     # ペア
-                buy_value["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
-            )
-
             # 買い注文の約定判定
-            buy_cancel_price = self.get_buy_cancel_price(buy_order_result)
             if(self.is_fully_filled(buy_order_result, buy_cancel_price)):
                 break
 
+            # 買い注文のキャンセル判定
             if (self.is_buy_order_cancel(buy_order_result)):
                 buy_cancel_order_result = self.prvApi.cancel_order(
                     buy_order_result["pair"],     # ペア
@@ -393,6 +401,9 @@ class AutoOrder:
             sell_order_info["orderSide"],  # 注文サイド 売 or 買(buy or sell)
             sell_order_info["orderType"]   # 注文タイプ 指値 or 成行(limit or market))
         )
+
+        self.notify_line(("デバッグ 売り注文処理発生！！ ID：{0}")
+                         .format(sell_by_market_result["order_id"]))
 
         while True:
             time.sleep(self.POLLING_SEC_SELL)
@@ -451,6 +462,9 @@ class AutoOrder:
                     sell_order_info_by_market["orderSide"],
                     sell_order_info_by_market["orderType"]
                 )
+
+                self.notify_line(("デバッグ 売り注文(損切)処理発生！！ ID：{0}")
+                                 .format(sell_by_market_result["order_id"]))
 
                 f_sell = float(sell_by_market_result["price"])
                 f_buy = float(buy_order_result["price"])
