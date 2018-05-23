@@ -125,9 +125,35 @@ class MyLogger:
 
 
 class AutoOrder:
+    """ 自動売買
+    ■ 制御フロー
+        全体処理 LOOP
+            買い注文処理
+                買い注文判定 LOOP
+                買い注文約定待ち LOOP
+                    買い注文約定判定
+                        買い注文約定 BREAK
+                    買い注文キャンセル判定
+                        買い注文キャンセル注文
+                        買い注文(成行)
+                        CONTINUE(買い注文約定待ち LOOPへ)
+
+            売り注文処理
+                売り注文処理
+                売り注文約定待ち LOOP
+                    売り注文約定判定
+                        売り注文約定 BREAK
+                    損切処理判定
+                        売り注文キャンセル注文
+                        売り注文(成行)
+                        売り注文(成行)約定待ち LOOP
+    """
+
     def __init__(self):
         """ コンストラクタ """
         self.LOOP_COUNT_MAIN = 10
+        self.AMOUNT = "1"
+
         self.BUY_ORDER_RANGE = 0.0
         self.SELL_ORDER_RANGE = 0.1
         self.POLLING_SEC_MAIN = 15
@@ -233,11 +259,10 @@ class AutoOrder:
         """ 買い注文のリクエスト情報を取得 """
         _, _, buy = self.get_xrp_jpy_value()
         # 買い注文アルゴリズム
-        BUY_AMOUNT = "1"
         buyPrice = str(float(buy) - self.BUY_ORDER_RANGE)
 
         buy_order_info = {"pair": "xrp_jpy",    # ペア
-                          "amount": BUY_AMOUNT,  # 注文枚数
+                          "amount": self.AMOUNT,  # 注文枚数
                           "price": buyPrice,    # 注文価格
                           "orderSide": "buy",   # buy or sell
                           "orderType": "limit"  # 指値注文の場合はlimit
@@ -248,10 +273,9 @@ class AutoOrder:
         """ 売り注文のリクエスト情報を取得 """
         _, sell, _ = self.get_xrp_jpy_value()
         # 売り注文アルゴリズム
-        SELL_AMOUNT = "1"
         sellPrice = str(float(sell) + self.SELL_ORDER_RANGE)
         sell_order_info = {"pair": "xrp_jpy",      # ペア
-                           "amount": SELL_AMOUNT,  # 注文枚数
+                           "amount": self.AMOUNT,  # 注文枚数
                            "price": sellPrice,     # 注文価格
                            "orderSide": "sell",    # buy or sell
                            "orderType": "limit"    # 指値注文の場合はlimit
@@ -350,7 +374,7 @@ class AutoOrder:
             buy_order_info["orderType"]
         )
 
-        self.notify_line(("デバッグ 買い注文(損切)処理発生！！ ID：{0}")
+        self.notify_line(("デバッグ 買い注文処理発生！！ ID：{0}")
                          .format(buy_value["order_id"]))
 
         # 買い注文結果を取得
@@ -370,35 +394,31 @@ class AutoOrder:
 
             # 買い注文のキャンセル判定
             if (self.is_buy_order_cancel(buy_order_result)):
+                # 買い注文(成行)
                 buy_cancel_order_result = self.prvApi.cancel_order(
                     buy_order_result["pair"],     # ペア
                     buy_order_result["order_id"]  # 注文ID
                 )
 
-                while True:
-                    time.sleep(self.POLLING_SEC_BUY)
-                    buy_cancel_price = self.get_buy_cancel_price(
-                        buy_cancel_order_result)
-                    if(self.is_fully_filled(buy_cancel_order_result,
-                                            buy_cancel_price)):
-                        msg = ("買い注文をキャンセル 注文ID:{0}"
-                               .format(buy_order_result["order_id"]))
-                        self.myLogger.info(msg)
-                        break
-
                 buy_order_result = buy_cancel_order_result
+                continue  # 買い注文約定待ちループへ
 
-        return buy_order_result
+        return buy_order_result  # 買い注文終了(売り注文へ)
 
     def sell_order(self, buy_order_result):
         """ 売り注文処理 """
         sell_order_info = self.get_sell_order_info()
-        sellValue = self.prvApi.order(
+        sell_order_result = self.prvApi.order(
             sell_order_info["pair"],       # ペア
             sell_order_info["price"],      # 価格
             sell_order_info["amount"],     # 注文枚数
             sell_order_info["orderSide"],  # 注文サイド 売 or 買(buy or sell)
             sell_order_info["orderType"]   # 注文タイプ 指値 or 成行(limit or market))
+        )
+
+        sell_order_result = self.prvApi.get_order(
+            sell_order_result["pair"],     # ペア
+            sell_order_result["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
         )
 
         self.notify_line(("デバッグ 売り注文処理発生！！ ID：{0}")
@@ -408,11 +428,6 @@ class AutoOrder:
             time.sleep(self.POLLING_SEC_SELL)
 
             last, _, _ = self.get_xrp_jpy_value()
-
-            sell_order_result = self.prvApi.get_order(
-                sellValue["pair"],     # ペア
-                sellValue["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
-            )
 
             stop_loss_price = self.get_stop_loss_price(sell_order_result)
             if (self.is_fully_filled(sell_order_result,
@@ -436,25 +451,13 @@ class AutoOrder:
                     sell_order_result["order_id"]  # 注文ID
                 )
 
-                while True:
-                    time.sleep(self.POLLING_SEC_SELL)
-                    if(self.is_fully_filled(cancel_result, stop_loss_price)):
-                        msg = ("売り注文をキャンセル 注文ID:{0}"
-                               .format(sell_order_result["order_id"]))
-                        self.myLogger.info(msg)
-                        break
-
-                msg = ("【損切】売り注文をキャンセル 注文ID:{0}"
-                       .format(cancel_result["order_id"]))
-                self.myLogger.info(msg)
-
                 # 売り注文（成行）で損切
                 amount = sell_order_result["start_amount"]
-                price = sell_order_result["price"]
+                price = stop_loss_price  # 成行なので指定しても意味なし？
                 sell_order_info_by_market = self.get_sell_order_info_by_barket(
                     amount, price)
 
-                sell_by_market_result = self.prvApi.order(
+                sell_market_result = self.prvApi.order(
                     sell_order_info_by_market["pair"],       # ペア
                     sell_order_info_by_market["price"],      # 価格
                     sell_order_info_by_market["amount"],     # 注文枚数
@@ -462,40 +465,12 @@ class AutoOrder:
                     sell_order_info_by_market["orderType"]
                 )
 
-                self.notify_line(("デバッグ 売り注文(損切)処理発生！！ ID：{0}")
-                                 .format(sell_by_market_result["order_id"]))
+                self.notify_line_stamp(("売り注文(損切)処理発生！！ ID：{0}")
+                                       .format(sell_market_result["order_id"]),
+                                       "1", "104")
+                sell_order_result = cancel_result
 
-                f_sell = float(sell_by_market_result["price"])
-                f_buy = float(buy_order_result["price"])
-                f_buy_amount = float(buy_order_result["executed_amount"])
-                sell_amount = sell_by_market_result["start_amount"]
-                f_sell_start_amount = float(sell_amount)
-                f_loss = (f_sell - f_buy) * f_buy_amount
-                f_last = last
-
-                while True:
-                    time.sleep(self.POLLING_SEC_SELL)
-                    if(self.is_fully_filled(sell_by_market_result,
-                                            stop_loss_price)):
-                        msg = ("【損切】売り注文 (ID:{0})"
-                               " [{1:.3f}円 x {2:.0f}XRP]を行いました。"
-                               "[現在値：{3:.3f}円] ")
-                        self.myLogger.info(msg.format(
-                            sell_by_market_result["order_id"],
-                            f_loss,
-                            f_sell_start_amount,
-                            f_last))
-                        break
-
-                line_msg = ("【損切】売り注文[成行] (ID:{0})"
-                            " [{1:.3f}円 x {2:.0f}XRP]を行いました。[現在値：{3:.3f}円] ")
-                self.notify_line_stamp(line_msg.format(
-                    sell_by_market_result["order_id"],
-                    f_sell,
-                    f_sell_start_amount,
-                    f_last), "1", "104")
-
-        return buy_order_result, sellValue
+        return buy_order_result, sell_order_result
 
     def order_buy_sell(self):
         """ 注文処理メイン（買い注文 → 売り注文） """
