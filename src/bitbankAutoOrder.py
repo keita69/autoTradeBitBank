@@ -37,6 +37,7 @@ class MyTechnicalAnalysisUtil:
     def __init__(self):
         """ コンストラクタ """
         self.pubApi = python_bitbankcc.public()
+        self.RSI_N = 14
 
     def get_ema(self, n):
         """ EMA(指数平滑移動平均)を返却する
@@ -54,7 +55,8 @@ class MyTechnicalAnalysisUtil:
         参考
         http://www.algo-fx-blog.com/rsi-python-ml-features/
         """
-        yyyymmdd = datetime.now().strftime('%Y%m%d')
+        utc_now = datetime.now(timezone('UTC'))
+        yyyymmdd = utc_now.strftime('%Y%m%d')
         candlestick = self.pubApi.get_candlestick(
             "xrp_jpy", candle_type, yyyymmdd)
 
@@ -341,7 +343,7 @@ class AutoOrder:
 
     def is_buy_order(self):
         """ 買い注文の判定 """
-        f_rsi = float(self.mtau.get_rsi(14, "1min"))
+        f_rsi = float(self.mtau.get_rsi(self.mtau.RSI_N, "1min"))
 
         last, _, _ = self.get_xrp_jpy_value()
         f_last = float(last)  # 現在値
