@@ -436,8 +436,6 @@ class AutoOrder:
                 sell_order_result["order_id"]  # 注文タイプ 指値 or 成行
             )
 
-            last, _, _ = self.get_xrp_jpy_value()
-
             stop_loss_price = self.get_stop_loss_price(sell_order_status)
             if (self.is_fully_filled(sell_order_status,
                                      stop_loss_price)):  # 売り注文約定判定
