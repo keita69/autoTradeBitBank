@@ -468,11 +468,11 @@ class AutoOrder:
                 f_buy = float(buy_order_result["price"])
                 f_benefit = (f_sell - f_buy) * f_amount
 
-                if(status == ""):
+                if(status == "CANCELED_UNFILLED"):
                     line_msg = "売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{0}"
                     spi = "1"
                     si = "104"
-                elif(status == ""):
+                elif(status == "FULLY_FILLED"):
                     line_msg = "売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP ID：{0}"
                     spi = "1"
                     si = "10"
