@@ -39,9 +39,7 @@ def test_get_rsi():
 def test_get_xrp_jpy_value():
     ao = AutoOrder()
     last, sell, buy = ao.get_xrp_jpy_value()
-    f_last = float(last) 
+    f_last = float(last)
     f_sell = float(sell)
     f_buy = float(buy)
     assert (f_last, f_sell, f_buy) > (0.0, 0.0, 0.0)
-
-
