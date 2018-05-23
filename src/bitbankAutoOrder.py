@@ -38,6 +38,16 @@ class MyTechnicalAnalysisUtil:
         """ コンストラクタ """
         self.pubApi = python_bitbankcc.public()
 
+    def get_ema(self, n):
+        """ EMA(指数平滑移動平均)を返却する
+        計算式：EMA ＝ 1分前のEMA+α(現在の終値－1分前のEMA)
+            *移動平均の期間をn
+            *α=2÷(n+1)
+        参考
+        http://www.algo-fx-blog.com/ema-how-to-do-with-python-pandas/
+        """
+        pass
+
     def get_rsi(self, n: int, candle_type):
         """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
         計算式：RSI＝直近N日間の上げ幅合計の絶対値/（直近N日間の上げ幅合計の絶対値＋下げ幅合計の絶対値）×100
