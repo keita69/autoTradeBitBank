@@ -224,6 +224,7 @@ class AutoOrder:
         side = orderResult["side"]
         order_id = orderResult["order_id"]
         pair = orderResult["pair"]
+        status = orderResult["status"]
         f_price = float(orderResult["price"])
         # f_start_amount = float(orderResult["remaining_amount"])    # 注文時の数量
         f_remaining_amount = float(orderResult["remaining_amount"])  # 未約定の数量
@@ -233,27 +234,29 @@ class AutoOrder:
 
         # self.myLogger.debug("注文時の数量：{0:.0f}".format(f_start_amount))
         result = False
-        if (orderResult["status"] == "FULLY_FILLED"):
-            msg = ("{0} 注文 約定済：{1:.3f} 円 x {2:.0f}({3}) "
-                   "[現在:{4:.3f}円] [閾価格]：{5:.3f} ID：{6}")
+        if (status == "FULLY_FILLED"):
+            msg = ("{0} 注文 約定済 {7}：{1:.3f} 円 x {2:.0f}({3}) "
+                   "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
             self.myLogger.info(msg.format(side,
                                           f_price,
                                           f_executed_amount,
                                           pair,
                                           f_last,
                                           f_threshold_price,
-                                          order_id))
+                                          order_id,
+                                          status))
             result = True
         else:
-            msg = ("{0} 注文 約定待ち：{1:.3f}円 x {2:.0f}({3}) "
-                   "[現在:{4:.3f}円] [閾価格]：{5:.3f} ID：{6}")
+            msg = ("{0} 注文 約定待ち {7}：{1:.3f}円 x {2:.0f}({3}) "
+                   "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
             self.myLogger.info(msg.format(side,
                                           f_price,
                                           f_remaining_amount,
                                           pair,
                                           f_last,
                                           f_threshold_price,
-                                          order_id))
+                                          order_id,
+                                          status))
         return result
 
     def get_buy_order_info(self):
@@ -401,6 +404,11 @@ class AutoOrder:
                     buy_order_result["order_id"]  # 注文ID
                 )
 
+                self.notify_line(("デバッグ 買い注文キャンセル処理発生！！ ID：{0}")
+                                 .format(buy_value["order_id"]))
+
+                buy_cancel_price = self.get_buy_cancel_price(
+                    buy_cancel_order_result)
                 buy_order_result = buy_cancel_order_result
                 continue  # 買い注文約定待ちループへ
 
