@@ -246,6 +246,18 @@ class AutoOrder:
                                           order_id,
                                           status))
             result = True
+        elif (status == "CANCELED_UNFILLED"):
+            msg = ("{0} 注文 キャンセル済 {7}：{1:.3f} 円 x {2:.0f}({3}) "
+                   "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
+            self.myLogger.info(msg.format(side,
+                                          f_price,
+                                          f_executed_amount,
+                                          pair,
+                                          f_last,
+                                          f_threshold_price,
+                                          order_id,
+                                          status))
+            result = True
         else:
             msg = ("{0} 注文 約定待ち {7}：{1:.3f}円 x {2:.0f}({3}) "
                    "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
@@ -439,28 +451,45 @@ class AutoOrder:
             stop_loss_price = self.get_stop_loss_price(sell_order_status)
             if (self.is_fully_filled(sell_order_status,
                                      stop_loss_price)):  # 売り注文約定判定
+                status = sell_order_status["status"]
+                order_id = sell_order_status["order_id"]
                 f_amount = float(sell_order_status["executed_amount"])
                 f_sell = float(sell_order_status["price"])
                 f_buy = float(buy_order_result["price"])
                 f_benefit = (f_sell - f_buy) * f_amount
 
-                line_msg = ("売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP "
-                            .format(f_benefit, f_amount))
-                self.notify_line(line_msg)
-                self.myLogger.debug(line_msg)
+                if(status == ""):
+                    line_msg = "売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{0}"
+                    spi = "1"
+                    si = "104"
+                elif(status == ""):
+                    line_msg = "売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP ID：{0}"
+                    spi = "1"
+                    si = "10"
+                else:
+                    raise AttributeError
+
+                self.notify_line_stamp(line_msg.format(
+                    f_benefit, f_amount, order_id), spi, si)
+                self.myLogger.debug(line_msg.format(
+                    f_benefit, f_amount, order_id))
+
                 break
 
             stop_loss_price = self.get_stop_loss_price(sell_order_status)
             if (self.is_stop_loss(sell_order_status)):  # 損切する場合
-                # 約定前の売り注文キャンセル
+                # 約定前の売り注文キャンセル(結果のステータスはチェックしない)
                 cancel_result = self.prvApi.cancel_order(
                     sell_order_status["pair"],     # ペア
                     sell_order_status["order_id"]  # 注文ID
                 )
 
+                order_id = cancel_result["order_id"]
+                self.myLogger.debug("売りキャンセル注文ID：{0}".format(order_id))
+
                 # 売り注文（成行）で損切
-                amount = sell_order_status["start_amount"]
-                price = stop_loss_price  # 成行なので指定しても意味なし？
+                amount = buy_order_result["start_amount"]
+                price = buy_order_result["price"]  # 成行なので指定しても意味なし？
                 sell_order_info_by_market = self.get_sell_order_info_by_barket(
                     amount, price)
 
@@ -472,10 +501,7 @@ class AutoOrder:
                     sell_order_info_by_market["orderType"]
                 )
 
-                self.notify_line_stamp(("売り注文(損切)処理発生！！ ID：{0}")
-                                       .format(sell_market_result["order_id"]),
-                                       "1", "104")
-                sell_order_result = cancel_result
+                sell_order_result = sell_market_result
 
         return buy_order_result, sell_order_result
 
