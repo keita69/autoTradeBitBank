@@ -98,10 +98,9 @@ class MyLogger:
         self.logger = getLogger(__name__)
         self.handler = StreamHandler()
         self.handler.setLevel(DEBUG)
-        self.logger.setLevel(DEBUG)
         self.logger.addHandler(self.handler)
         formatter = logging.Formatter(
-            '%(asctime)s - %(name) - %(levelname)s - %(message)s')
+            "%(asctime)s %(name) %(levelname)s %(message)s")
         self.handler.setFormatter(formatter)
 
     def debug(self, msg):
