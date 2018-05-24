@@ -10,17 +10,18 @@ env:
     # export LINE_NOTIFY_TOKEN=SET_VALUE_IN_TRAVICE_CI
 
 install:
-#  - pip install pytest
   - pip install pep8
   - pip install codecov
   - pip install git+https://github.com/bitbankinc/python-bitbankcc.git
   - pip install pandas
+  - pip install pytest pytest-cov
 
 script:
   - pep8 src/bitbankAutoOrder.py
-  - pytest src/test_bitbankAutoOrder.py
-  - coverage run src/test_bitbankAutoOrder.py
-  
+#  - pytest src/test_bitbankAutoOrder.py
+#  - coverage run src/test_bitbankAutoOrder.py
+  - pytest --cov=./src
+ 
 after_success:
   - codecov
 
