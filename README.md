@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/keita69/autoTradeBitBank.svg?branch=master)](https://travis-ci.org/keita69/autoTradeBitBank)　[![Coverage Status](https://coveralls.io/repos/github/keita69/autoTradeBitBank/badge.svg?branch=master)](https://coveralls.io/github/keita69/autoTradeBitBank?branch=master)
+[![Build Status](https://travis-ci.org/keita69/autoTradeBitBank.svg?branch=master)](https://travis-ci.org/keita69/autoTradeBitBank)　[![codecov](https://codecov.io/gh/keita69/autoTradeBitBank/branch/master/graph/badge.svg)](https://codecov.io/gh/keita69/autoTradeBitBank)
 
 # autoTradeBitBank
 Automatic trade with BitBank

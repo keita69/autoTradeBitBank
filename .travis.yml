@@ -5,25 +5,25 @@ python:
 
 env:
   global:
-    export BITBANK_API_KEY=dummy
-    export BITBANK_API_SECRET=dummy
-    export LINE_NOTIFY_TOKEN=vN1Xb3g1wviVaBvENb2OfZU40kUaJyBcAbTWeN6xuQM
+    # export BITBANK_API_KEY=SET_VALUE_IN_TRAVICE_CI
+    # export BITBANK_API_SECRET=SET_VALUE_IN_TRAVICE_CI
+    # export LINE_NOTIFY_TOKEN=SET_VALUE_IN_TRAVICE_CI
 
 install:
-#  - pip install pytest
   - pip install pep8
-  - pip install coveralls
+  - pip install codecov
   - pip install git+https://github.com/bitbankinc/python-bitbankcc.git
   - pip install pandas
+  - pip install pytest pytest-cov
 
 script:
   - pep8 src/bitbankAutoOrder.py
-  - pytest src/test_bitbankAutoOrder.py
-#  - coverage run --source=src/bitbankAutoOrder.py test_src/test_bitbankAutoOrder.py
-  - coverage run src/test_bitbankAutoOrder.py
-  
+#  - pytest src/test_bitbankAutoOrder.py
+#  - coverage run src/test_bitbankAutoOrder.py
+  - pytest --cov=./src
+ 
 after_success:
-  - coveralls
+  - codecov
 
 notifications:
    slack: keita69sawada:2gXpVEe11Q8bWXIYlTyDxv73

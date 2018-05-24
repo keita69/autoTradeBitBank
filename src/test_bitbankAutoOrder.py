@@ -36,6 +36,12 @@ def test_get_rsi():
     assert rsi <= 100
 
 
+def test_get_ema():
+    mtau = MyTechnicalAnalysisUtil()
+    ema = mtau.get_ema("1min", 9, 26)
+    assert len(ema) < 0
+
+
 def test_get_xrp_jpy_value():
     ao = AutoOrder()
     last, sell, buy = ao.get_xrp_jpy_value()

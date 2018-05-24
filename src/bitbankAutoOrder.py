@@ -38,22 +38,7 @@ class MyTechnicalAnalysisUtil:
         self.pubApi = python_bitbankcc.public()
         self.RSI_N = 14
 
-    def get_ema(self, n):
-        """ EMA(指数平滑移動平均)を返却する
-        計算式：EMA ＝ 1分前のEMA+α(現在の終値－1分前のEMA)
-            *移動平均の期間をn
-            *α=2÷(n+1)
-        参考
-        http://www.algo-fx-blog.com/ema-how-to-do-with-python-pandas/
-        """
-        pass
-
-    def get_rsi(self, n: int, candle_type):
-        """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
-        計算式：RSI＝直近N日間の上げ幅合計の絶対値/（直近N日間の上げ幅合計の絶対値＋下げ幅合計の絶対値）×100
-        参考
-        http://www.algo-fx-blog.com/rsi-python-ml-features/
-        """
+    def get_candlestick(self, n: int, candle_type):
         now = time.time()
         utc = datetime.utcfromtimestamp(now)
 
@@ -85,6 +70,30 @@ class MyTechnicalAnalysisUtil:
                                                       "time"])   # UnixTime
             df_ohlcv.append(df_yday_ohlcv, ignore_index=True)  # 前日分追加
 
+        return df_ohlcv
+
+    def get_ema(self, candle_type, n_short, n_long):
+        """ EMA(指数平滑移動平均)を返却する
+        計算式：EMA ＝ 1分前のEMA+α(現在の終値－1分前のEMA)
+            *移動平均の期間をn
+            *α=2÷(n+1)
+        参考
+        http://www.algo-fx-blog.com/ema-how-to-do-with-python-pandas/
+        """
+        df_ema = self.get_candlestick(n_long, candle_type)
+
+        df_ema['ema_short'] = df_ema['close'].ewm(span=int(n_short)).mean()
+        df_ema['ema_long'] = df_ema['close'].ewm(span=int(n_long)).mean()
+
+        return df_ema  # TODO
+
+    def get_rsi(self, n: int, candle_type):
+        """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
+        計算式：RSI＝直近N日間の上げ幅合計の絶対値/（直近N日間の上げ幅合計の絶対値＋下げ幅合計の絶対値）×100
+        参考
+        http://www.algo-fx-blog.com/rsi-python-ml-features/
+        """
+        df_ohlcv = self.get_candlestick(n, candle_type)
         df_close = df_ohlcv["close"].astype('float')
         df_diff = df_close.diff()
 
@@ -475,29 +484,15 @@ class AutoOrder:
             stop_loss_price = self.get_stop_loss_price(sell_order_status)
             if (self.is_fully_filled(sell_order_status,
                                      stop_loss_price)):  # 売り注文約定判定
-                status = sell_order_status["status"]
                 order_id = sell_order_status["order_id"]
                 f_amount = float(sell_order_status["executed_amount"])
                 f_sell = float(sell_order_status["price"])
                 f_buy = float(buy_order_result["price"])
                 f_benefit = (f_sell - f_buy) * f_amount
 
-                if(status == "CANCELED_UNFILLED"):
-                    line_msg = "売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{0}"
-                    spi = "1"
-                    si = "104"
-                elif(status == "FULLY_FILLED"):
-                    line_msg = "売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP ID：{0}"
-                    spi = "1"
-                    if(f_benefit > 0):
-                        si = "10"
-                    else:
-                        si = "113"
-                else:
-                    raise AttributeError
-
+                line_msg = "売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP ID：{0}"
                 self.notify_line_stamp(line_msg.format(
-                    f_benefit, f_amount, order_id), spi, si)
+                    f_benefit, f_amount, order_id), "1", "10")
                 self.myLogger.debug(line_msg.format(
                     f_benefit, f_amount, order_id))
 
@@ -528,8 +523,24 @@ class AutoOrder:
                     sell_order_info_by_market["orderType"]
                 )
 
-                self.myLogger.debug("売り注文(成行)損切注文ID：{0}".format(order_id))
-                break  # 売り注文処理終了
+                # TODO 約定しないと情報がとれない？
+
+                order_id = sell_market_result["order_id"]
+                self.myLogger.debug("売り注文（成行）ID：{0}".format(order_id))
+
+                order_id = sell_market_result["order_id"]
+                f_amount = float(sell_market_result["executed_amount"])
+                f_sell = float(sell_market_result["price"])
+                f_buy = float(sell_market_result["price"])
+                f_benefit = (f_sell - f_buy) * f_amount
+
+                line_msg = "売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{0}"
+                self.notify_line_stamp(line_msg.format(
+                    f_benefit, f_amount, order_id), "1", "104")
+                self.myLogger.debug(line_msg.format(
+                    f_benefit, f_amount, order_id))
+
+                sell_order_result = sell_market_result
 
         return buy_order_result, sell_order_result
 
