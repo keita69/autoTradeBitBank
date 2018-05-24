@@ -514,7 +514,8 @@ class AutoOrder:
                     sell_order_info_by_market["orderType"]
                 )
 
-                sell_order_result = sell_market_result
+                self.myLogger.debug("売り注文(成行)損切注文ID：{0}".format(order_id))
+                break  # 売り注文処理終了
 
         return buy_order_result, sell_order_result
 
