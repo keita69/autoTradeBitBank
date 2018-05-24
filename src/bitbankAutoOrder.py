@@ -512,6 +512,8 @@ class AutoOrder:
                     sell_order_info_by_market["orderType"]
                 )
 
+                # TODO 約定しないと情報がとれない？
+
                 order_id = sell_market_result["order_id"]
                 self.myLogger.debug("売り注文（成行）ID：{0}".format(order_id))
 
