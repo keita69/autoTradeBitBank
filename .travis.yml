@@ -19,7 +19,7 @@ install:
 script:
   - pep8 src/bitbankAutoOrder.py
   - pytest src/test_bitbankAutoOrder.py
-  - coverage run --source=src/bitbankAutoOrder.py src/test_bitbankAutoOrder.py
+  - coverage run --source=bitbankAutoOrder.py setup.py test_bitbankAutoOrder.py
 #  - coverage run src/test_bitbankAutoOrder.py
   
 after_success:
