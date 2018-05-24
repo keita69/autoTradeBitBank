@@ -38,22 +38,7 @@ class MyTechnicalAnalysisUtil:
         self.pubApi = python_bitbankcc.public()
         self.RSI_N = 14
 
-    def get_ema(self, n):
-        """ EMA(指数平滑移動平均)を返却する
-        計算式：EMA ＝ 1分前のEMA+α(現在の終値－1分前のEMA)
-            *移動平均の期間をn
-            *α=2÷(n+1)
-        参考
-        http://www.algo-fx-blog.com/ema-how-to-do-with-python-pandas/
-        """
-        pass
-
-    def get_rsi(self, n: int, candle_type):
-        """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
-        計算式：RSI＝直近N日間の上げ幅合計の絶対値/（直近N日間の上げ幅合計の絶対値＋下げ幅合計の絶対値）×100
-        参考
-        http://www.algo-fx-blog.com/rsi-python-ml-features/
-        """
+    def get_candlestick(self, n: int, candle_type):
         now = time.time()
         utc = datetime.utcfromtimestamp(now)
 
@@ -85,6 +70,30 @@ class MyTechnicalAnalysisUtil:
                                                       "time"])   # UnixTime
             df_ohlcv.append(df_yday_ohlcv, ignore_index=True)  # 前日分追加
 
+        return df_ohlcv
+
+    def get_ema(self, candle_type, n_short, n_long):
+        """ EMA(指数平滑移動平均)を返却する
+        計算式：EMA ＝ 1分前のEMA+α(現在の終値－1分前のEMA)
+            *移動平均の期間をn
+            *α=2÷(n+1)
+        参考
+        http://www.algo-fx-blog.com/ema-how-to-do-with-python-pandas/
+        """
+        df_ema = self.get_candlestick(n_long, candle_type)
+
+        df_ema['ema_short'] = df_ema['close'].ewm(span=int(n_short)).mean()
+        df_ema['ema_long'] = df_ema['close'].ewm(span=int(n_long)).mean()
+
+        return df_ema  # TODO
+
+    def get_rsi(self, n: int, candle_type):
+        """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
+        計算式：RSI＝直近N日間の上げ幅合計の絶対値/（直近N日間の上げ幅合計の絶対値＋下げ幅合計の絶対値）×100
+        参考
+        http://www.algo-fx-blog.com/rsi-python-ml-features/
+        """
+        df_ohlcv = self.get_candlestick(n, candle_type)
         df_close = df_ohlcv["close"].astype('float')
         df_diff = df_close.diff()
 
