@@ -478,7 +478,10 @@ class AutoOrder:
                 elif(status == "FULLY_FILLED"):
                     line_msg = "売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP ID：{0}"
                     spi = "1"
-                    si = "10"
+                    if(f_benefit > 0):
+                        si = "10"
+                    else:
+                        si = "113"
                 else:
                     raise AttributeError
 
