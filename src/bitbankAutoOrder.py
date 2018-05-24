@@ -4,12 +4,11 @@ import os
 import sys
 import traceback
 import time
-import datetime
 import requests
 import pandas
 import logging
 from logging import getLogger, StreamHandler, DEBUG
-
+from datetime import datetime, timezone, timedelta
 
 import python_bitbankcc
 
@@ -55,8 +54,10 @@ class MyTechnicalAnalysisUtil:
         参考
         http://www.algo-fx-blog.com/rsi-python-ml-features/
         """
-        utc_now = datetime.now(timezone('UTC'))
-        yyyymmdd = utc_now.strftime('%Y%m%d')
+        now = time.time()
+        utc = datetime.utcfromtimestamp(now)
+
+        yyyymmdd = utc.strftime('%Y%m%d')
         candlestick = self.pubApi.get_candlestick(
             "xrp_jpy", candle_type, yyyymmdd)
 
