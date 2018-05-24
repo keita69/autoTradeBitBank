@@ -463,26 +463,15 @@ class AutoOrder:
             stop_loss_price = self.get_stop_loss_price(sell_order_status)
             if (self.is_fully_filled(sell_order_status,
                                      stop_loss_price)):  # 売り注文約定判定
-                status = sell_order_status["status"]
                 order_id = sell_order_status["order_id"]
                 f_amount = float(sell_order_status["executed_amount"])
                 f_sell = float(sell_order_status["price"])
                 f_buy = float(buy_order_result["price"])
                 f_benefit = (f_sell - f_buy) * f_amount
 
-                if(status == "CANCELED_UNFILLED"):
-                    line_msg = "売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{0}"
-                    spi = "1"
-                    si = "104"
-                elif(status == "FULLY_FILLED"):
-                    line_msg = "売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP ID：{0}"
-                    spi = "1"
-                    si = "10"
-                else:
-                    raise AttributeError
-
+                line_msg = "売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP ID：{0}"
                 self.notify_line_stamp(line_msg.format(
-                    f_benefit, f_amount, order_id), spi, si)
+                    f_benefit, f_amount, order_id), "1", "10")
                 self.myLogger.debug(line_msg.format(
                     f_benefit, f_amount, order_id))
 
@@ -512,6 +501,21 @@ class AutoOrder:
                     sell_order_info_by_market["orderSide"],
                     sell_order_info_by_market["orderType"]
                 )
+
+                order_id = sell_market_result["order_id"]
+                self.myLogger.debug("売り注文（成行）ID：{0}".format(order_id))
+
+                order_id = sell_market_result["order_id"]
+                f_amount = float(sell_market_result["executed_amount"])
+                f_sell = float(sell_market_result["price"])
+                f_buy = float(sell_market_result["price"])
+                f_benefit = (f_sell - f_buy) * f_amount
+
+                line_msg = "売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{0}"
+                self.notify_line_stamp(line_msg.format(
+                    f_benefit, f_amount, order_id), "1", "104")
+                self.myLogger.debug(line_msg.format(
+                    f_benefit, f_amount, order_id))
 
                 sell_order_result = sell_market_result
 
