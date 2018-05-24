@@ -12,18 +12,17 @@ env:
 install:
 #  - pip install pytest
   - pip install pep8
-  - pip install coveralls
+  - pip install codecov
   - pip install git+https://github.com/bitbankinc/python-bitbankcc.git
   - pip install pandas
 
 script:
   - pep8 src/bitbankAutoOrder.py
   - pytest src/test_bitbankAutoOrder.py
-  - coverage run --source=bitbankAutoOrder.py setup.py test_bitbankAutoOrder.py
-#  - coverage run src/test_bitbankAutoOrder.py
+  - coverage run src/test_bitbankAutoOrder.py
   
 after_success:
-  - coveralls
+  - codecov
 
 notifications:
    slack: keita69sawada:2gXpVEe11Q8bWXIYlTyDxv73
