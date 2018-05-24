@@ -205,13 +205,24 @@ class AutoOrder:
 
     def get_balances(self):
         """ 現在のXRP資産の取得 """
-        self.myLogger.info(self.api_key)
-        self.myLogger.info(self.api_secret)
         balances = self.prvApi.get_asset()
         for data in balances['assets']:
             if((data['asset'] == 'jpy') or (data['asset'] == 'xrp')):
                 self.myLogger.info('●通貨：' + data['asset'])
                 self.myLogger.info('保有量：' + data['onhand_amount'])
+
+    def get_total_assets(self):
+        """ 現在の総資産（円）の取得 """
+        balances = self.prvApi.get_asset()
+        total_assets = 0.0
+        for data in balances['assets']:
+            if (data['asset'] == 'jpy'):
+                total_assets = total_assets + float(data['onhand_amount'])
+            elif (data['asset'] == 'xrp'):
+                xrp_last, _, _ = self.get_xrp_jpy_value()
+                xrp_assets = float(data['onhand_amount']) * float(xrp_last)
+                total_assets = total_assets + xrp_assets
+        return total_assets
 
     def get_xrp_jpy_value(self):
         """ 現在のXRP価格を取得 """

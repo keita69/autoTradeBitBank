@@ -43,3 +43,9 @@ def test_get_xrp_jpy_value():
     f_sell = float(sell)
     f_buy = float(buy)
     assert (f_last, f_sell, f_buy) > (0.0, 0.0, 0.0)
+
+
+def test_get_total_assets():
+    ao = AutoOrder()
+    total_assets = ao.get_total_assets()
+    assert total_assets > 0.0
