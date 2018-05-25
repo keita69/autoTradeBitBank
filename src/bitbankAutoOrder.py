@@ -85,7 +85,7 @@ class MyTechnicalAnalysisUtil:
         df_ema['ema_short'] = df_ema['close'].ewm(span=int(n_short)).mean()
         df_ema['ema_long'] = df_ema['close'].ewm(span=int(n_long)).mean()
 
-        tail_index = (n_long) * -1
+        tail_index = (n_short) * -1
         return df_ema[tail_index:]
 
     def get_ema_cross_status(self, candle_type, n_short, n_long):
