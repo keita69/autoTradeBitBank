@@ -85,7 +85,21 @@ class MyTechnicalAnalysisUtil:
         df_ema['ema_short'] = df_ema['close'].ewm(span=int(n_short)).mean()
         df_ema['ema_long'] = df_ema['close'].ewm(span=int(n_long)).mean()
 
-        return df_ema  # TODO
+        return df_ema
+
+    def get_ema_cross_status(self, candle_type, n_short, n_long):
+        """ EMAからゴールデンクロス、デットクロス、その他 状態 を返却する
+        EMA(diff) = EMA(Short) - EMA(Long)
+        過去N分のEMA(diff)から回帰直線の傾きを求め、その傾き(a)で ゴールデンクロス、デットクロス、その他 を
+        判定する。
+        　　a > +γ(+閾値) ->  ゴールデンクロス
+        　　-γ(-閾値) < a < +γ(+閾値) ->  どちらでもない
+        　　a < -γ(-閾値) ->  デットクロス
+        """
+        df_ema = self.get_ema(candle_type, n_short, n_long)
+
+        # TODO Enumでゴールデンクロス、デットクロス、その他を作成する
+        return True
 
     def get_rsi(self, n: int, candle_type):
         """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
@@ -560,6 +574,7 @@ class AutoOrder:
         """
         line_notify_api = 'https://notify-api.line.me/api/notify'
 
+        total_assets = self.get_total_assets()
         message = "{0}  {1}".format(self.mu.get_timestamp(), message)
 
         if(stickerPackageId == "" or stickerId == ""):
