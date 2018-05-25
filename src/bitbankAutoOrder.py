@@ -575,7 +575,8 @@ class AutoOrder:
         line_notify_api = 'https://notify-api.line.me/api/notify'
 
         total_assets = self.get_total_assets()
-        message = "{0}  {1}".format(self.mu.get_timestamp(), message)
+        message = "{0}  {1} 総資産：{2}円".format(
+            self.mu.get_timestamp(), message, total_assets)
 
         if(stickerPackageId == "" or stickerId == ""):
             payload = {'message': message}
