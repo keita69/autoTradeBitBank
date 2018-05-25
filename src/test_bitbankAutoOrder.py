@@ -39,7 +39,7 @@ def test_get_rsi():
 def test_get_ema():
     mtau = MyTechnicalAnalysisUtil()
     ema = mtau.get_ema("1min", 9, 26)
-    assert len(ema) < 0
+    assert len(ema) == 26
 
 
 def test_get_xrp_jpy_value():
