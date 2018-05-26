@@ -11,7 +11,7 @@ import logging
 from logging import getLogger, StreamHandler, DEBUG
 from datetime import datetime, timezone, timedelta
 from sklearn import linear_model
-from enum import Enum, auto
+from enum import Enum
 import python_bitbankcc
 
 from datetime import datetime, timedelta, timezone
@@ -28,9 +28,9 @@ class MyUtil:
 
 class EmaCross(Enum):
     """ EMSのクロス状態を定義 """
-    GOLDEN_CROSS = auto()
-    DEAD_CROSS = auto()
-    OTHER_CROSS = auto()
+    GOLDEN_CROSS = 1
+    DEAD_CROSS = 0
+    OTHER_CROSS = -1
 
 
 class MyTechnicalAnalysisUtil:
@@ -124,17 +124,20 @@ class MyTechnicalAnalysisUtil:
         x = df_ema_x.values.tolist()
         y = df_ema_y.values.tolist()
 
+        self.myLogger.debug("EMA:\n{0}".format(df_ema))
+
         clf.fit(x, y)        # 予測モデルを作成
         a = clf.coef_        # 回帰係数（傾き）
         b = clf.intercept_   # 切片 (誤差)
         c = clf.score(x, y)  # 決定係数
 
-        msg = "予想モデル：y = {0}x + {1} 決定係数：{2}"
-        self.myLogger.debug(msg.format(a, b, c))
-
         THRESHOLD = 0.0
         booby_value = df_ema_y["diff"][-2:-1].values[0]
         last_value = df_ema_y["diff"][-1:].values[0]
+
+        msg = "予想モデル：y = {0}x + {1} 決定係数：{2} Booby：{3} Last：{4}"
+        self.myLogger.debug(msg.format(a, b, c, booby_value, last_value))
+
         if((a >= THRESHOLD) and (booby_value < 0) and (last_value >= 0)):
             # golden cross
             return EmaCross.GOLDEN_CROSS
@@ -432,7 +435,7 @@ class AutoOrder:
         f_rsi = float(self.mtau.get_rsi(self.mtau.RSI_N, "1min"))
         last, _, _ = self.get_xrp_jpy_value()
         f_last = float(last)  # 現在値
-        RSI_THRESHOLD = 40
+        RSI_THRESHOLD = 60
         condition_1 = (f_rsi < RSI_THRESHOLD)
 
         # 条件2
