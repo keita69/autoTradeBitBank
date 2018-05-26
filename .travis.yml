@@ -1,7 +1,7 @@
 language: python
 
 python:
-  - 3.5
+  - 3.6
 
 env:
   global:
@@ -16,6 +16,7 @@ install:
   - pip install pandas
   - pip install pytest pytest-cov
   - pip install scikit-learn
+  - pip install scipy
 
 script:
   - pep8 src/bitbankAutoOrder.py
