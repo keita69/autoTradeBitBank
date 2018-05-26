@@ -22,6 +22,29 @@ def test_ems_cross():
     assert (condition_1 or condition_2 or condition_3)
 
 
+def test_is_stop_loss():
+    """ テスト実行時の現在価格、EMS、RSIによって結果がことなる """
+    sell_order_result = {
+        "success": 1,
+        "data": {
+            "order_id": 41765227,
+            "pair": "xrp_jpy",
+            "side": "sell",
+            "type": "limit",
+            "start_amount": "1.000000",
+            "remaining_amount": "0.000000",
+            "executed_amount": "1.000000",
+            "price": "67.4130",
+            "average_price": "67.4130",
+            "ordered_at": 1527257113483,
+            "executed_at": 1527257770061,
+            "status": "FULLY_FILLED"
+        }
+    }["data"]
+    ao = AutoOrder()
+    ao.is_stop_loss(sell_order_result)
+
+
 def test_patch_get_xrp_jpy_value(monkeypatch):
     """ [Mock Patch]
     参考：http://thinkami.hatenablog.com/entry/2017/03/07/065903

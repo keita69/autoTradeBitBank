@@ -403,12 +403,38 @@ class AutoOrder:
         return sell_order_info
 
     def is_stop_loss(self, sell_order_result):
-        """ 売り注文(損切注文)の判定 """
+        """ 売り注文(損切注文)の判定
+                条件(condition)：
+            1. 含み損が損切価格より大きい　または
+            2. RSIが閾値(RSI_THRESHOLD)より大きい　かつ　EMSクロスがデッドクロスの場合　または
+            3. 含み損が損切価格のN％より大きい　かつ　EMSクロスがデッドクロスの場合
+        """
+
+        # 条件1
         last, _, _ = self.get_xrp_jpy_value()
         f_last = float(last)  # 現在値
-
         stop_loss_price = self.get_stop_loss_price(sell_order_result)
-        if(stop_loss_price > f_last):
+        condition_1 = (stop_loss_price > f_last)
+
+        # 条件2
+        RSI_THRESHOLD = 60
+        f_rsi = float(self.mtau.get_rsi(9, "1min"))
+        n_short = 9
+        n_long = 26
+        status = self.mtau.get_ema_cross_status("1min", n_short, n_long)
+        over_rsi = (f_rsi > RSI_THRESHOLD)
+        dead_cross = (status == EmaCross.DEAD_CROSS)
+        condition_2 = over_rsi and dead_cross
+
+        # 条件3
+        n = 0.30
+        f_stop_loss_price_n = float(
+            self.get_stop_loss_price_n(sell_order_result, n))
+        over_stop_loss_n = (f_stop_loss_price_n > f_last)
+        dead_cross = (status == EmaCross.DEAD_CROSS)
+        condition_3 = (over_stop_loss_n and dead_cross)
+
+        if(condition_1 or condition_2 or condition_3):
             msg = ("【損切判定されました 現在値：{0} 損切値：{1} 】"
                    .format(f_last, stop_loss_price))
             self.myLogger.info(msg)
@@ -421,6 +447,13 @@ class AutoOrder:
         f_sell_order_price = float(sell_order_result["price"])  # 売り指定価格
 
         THRESHOLD = 10  # 閾値
+        return f_sell_order_price - (self.SELL_ORDER_RANGE * THRESHOLD)
+
+    def get_stop_loss_price_n(self, sell_order_result, n):
+        """ 損切価格(閾値にnをかける)の取得 """
+        f_sell_order_price = float(sell_order_result["price"])  # 売り指定価格
+
+        THRESHOLD = 10 * n  # 閾値
         return f_sell_order_price - (self.SELL_ORDER_RANGE * THRESHOLD)
 
     def is_buy_order(self):
@@ -597,7 +630,8 @@ class AutoOrder:
                     sell_order_info_by_market["orderType"]
                 )
 
-                while(self.is_fully_filled(sell_market_result, stop_loss_price)):
+                while(self.is_fully_filled(
+                        sell_market_result, stop_loss_price)):
                     break
 
                 order_id = sell_market_result["order_id"]
