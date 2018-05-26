@@ -113,16 +113,16 @@ class MyTechnicalAnalysisUtil:
         ３．その他判定（何もしない）
             -γ(-閾値) < a(傾き) < +γ(+閾値)
         """
+
         df_ema = self.get_ema(candle_type, n_short, n_long)
-        df_diff_ema = pd.DataFrame()
-        df_diff_ema["time"] = pd.DataFrame(df_ema["time"])
-        df_diff_ema["n_diff"] = df_ema["n_short"] - df_ema["n_long"]
+
+        df_ema_x = pd.DataFrame(df_ema["time"], columns=["time"])
+        df_ema_y = pd.DataFrame(
+            df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
 
         clf = linear_model.LinearRegression()
-        x = pd.DataFrame(df_diff_ema["time"],
-                         columns=list("time")).values.tolist()
-        y = pd.DataFrame(df_diff_ema["n_diff"],
-                         columns=list("n_diff")).values.tolist()
+        x = df_ema_x.values.tolist()
+        y = df_ema_y.values.tolist()
 
         clf.fit(x, y)        # 予測モデルを作成
         a = clf.coef_        # 回帰係数（傾き）
@@ -133,14 +133,12 @@ class MyTechnicalAnalysisUtil:
         self.myLogger.debug(msg.format(a, b, c))
 
         THRESHOLD = 0.0
-        if((a >= THRESHOLD) and
-                (df_diff_ema["n_diff"][-2:] < 0) and
-                (df_diff_ema["n_diff"][-1:] >= 0)):
+        booby_value = df_ema_y["diff"][-2:-1].values[0]
+        last_value = df_ema_y["diff"][-1:].values[0]
+        if((a >= THRESHOLD) and (booby_value < 0) and (last_value >= 0)):
             # golden cross
             return EmaCross.GOLDEN_CROSS
-        elif((a < THRESHOLD) and
-                (df_diff_ema["n_diff"][-2:] > 0) and
-                (df_diff_ema["n_diff"][-1:] <= 0)):
+        elif((a < THRESHOLD) and (booby_value > 0) and (last_value <= 0)):
             # dead cross
             return EmaCross.DEAD_CROSS
 
