@@ -145,7 +145,6 @@ class MyTechnicalAnalysisUtil:
             # dead cross
             return EmaCross.DEAD_CROSS
 
-        # TODO Enumでゴールデンクロス、デットクロス、その他を作成する
         # other cross
         return EmaCross.OTHER_CROSS
 
@@ -598,7 +597,8 @@ class AutoOrder:
                     sell_order_info_by_market["orderType"]
                 )
 
-                # TODO 約定しないと情報がとれない？
+                while(self.is_fully_filled(sell_market_result, stop_loss_price)):
+                    break
 
                 order_id = sell_market_result["order_id"]
                 self.myLogger.debug("売り注文（成行）ID：{0}".format(order_id))
