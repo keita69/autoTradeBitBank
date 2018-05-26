@@ -4,6 +4,7 @@ import pytest
 import python_bitbankcc
 from bitbankAutoOrder import MyTechnicalAnalysisUtil
 from bitbankAutoOrder import AutoOrder
+from bitbankAutoOrder import EmaCross
 
 
 def test_patch_get_xrp_jpy_value(monkeypatch):
@@ -57,3 +58,13 @@ def test_get_total_assets():
     ao = AutoOrder()
     total_assets = ao.get_total_assets()
     assert total_assets > 0.0
+
+
+def test_ems_cross():
+    n_short = 9
+    n_long = 26
+    mtau = MyTechnicalAnalysisUtil()
+    ema_cross_status = mtau.get_ema_cross_status(
+        "1min", n_short, n_long)
+    assert ema_cross_status == (
+        EmaCross.GOLDEN_CROSS or EmaCross.DEAD_CROSS or EmaCross.OTHER_CROSS)

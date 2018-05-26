@@ -5,11 +5,13 @@ import sys
 import traceback
 import time
 import requests
-import pandas
+import pandas as pd
+import numpy as np
 import logging
 from logging import getLogger, StreamHandler, DEBUG
 from datetime import datetime, timezone, timedelta
-
+from sklearn import linear_model
+from enum import Enum, auto
 import python_bitbankcc
 
 from datetime import datetime, timedelta, timezone
@@ -24,6 +26,13 @@ class MyUtil:
         return datetime.now(JST).strftime('%Y/%m/%d %H:%M:%S')
 
 
+class EmaCross(Enum):
+    """ EMSのクロス状態を定義 """
+    GOLDEN_CROSS = auto()
+    DEAD_CROSS = auto()
+    OTHER_CROSS = auto()
+
+
 class MyTechnicalAnalysisUtil:
     """ テクニカル分析のユーティリティクラス
     https://www.rakuten-sec.co.jp/MarketSpeed/onLineHelp/msman2_5_1_2.html
@@ -36,6 +45,7 @@ class MyTechnicalAnalysisUtil:
     def __init__(self):
         """ コンストラクタ """
         self.pubApi = python_bitbankcc.public()
+        self.myLogger = MyLogger()
         self.RSI_N = 14
 
     def get_candlestick(self, n: int, candle_type):
@@ -47,13 +57,13 @@ class MyTechnicalAnalysisUtil:
             "xrp_jpy", candle_type, yyyymmdd)
 
         ohlcv = candlestick["candlestick"][0]["ohlcv"]
-        df_ohlcv = pandas.DataFrame(ohlcv,
-                                    columns=["open",   # 始値
-                                             "hight",   # 高値
-                                             "low",     # 安値
-                                             "close",     # 終値
-                                             "amount",  # 出来高
-                                             "time"])   # UnixTime
+        df_ohlcv = pd.DataFrame(ohlcv,
+                                columns=["open",   # 始値
+                                         "hight",   # 高値
+                                         "low",     # 安値
+                                         "close",     # 終値
+                                         "amount",  # 出来高
+                                         "time"])   # UnixTime
 
         if(len(ohlcv) <= n):  # データが不足している場合
             yesterday = (datetime.now() - datetime.timedelta(days=1))
@@ -61,13 +71,13 @@ class MyTechnicalAnalysisUtil:
             yday_candlestick = self.pubApi.get_candlestick(
                 "xrp_jpy", candle_type, str_yesterday)
             yday_ohlcv = yday_candlestick["candlestick"][0]["ohlcv"]
-            df_yday_ohlcv = pandas.DataFrame(yday_ohlcv,
-                                             columns=["open",   # 始値
-                                                      "hight",   # 高値
-                                                      "low",     # 安値
-                                                      "close",     # 終値
-                                                      "amount",  # 出来高
-                                                      "time"])   # UnixTime
+            df_yday_ohlcv = pd.DataFrame(yday_ohlcv,
+                                         columns=["open",   # 始値
+                                                  "hight",   # 高値
+                                                  "low",     # 安値
+                                                  "close",     # 終値
+                                                  "amount",  # 出来高
+                                                  "time"])   # UnixTime
             df_ohlcv.append(df_yday_ohlcv, ignore_index=True)  # 前日分追加
 
         return df_ohlcv
@@ -90,17 +100,53 @@ class MyTechnicalAnalysisUtil:
 
     def get_ema_cross_status(self, candle_type, n_short, n_long):
         """ EMAからゴールデンクロス、デットクロス、その他 状態 を返却する
+        https://pythondatascience.plavox.info/scikit-learn/%E7%B7%9A%E5%BD%A2%E5%9B%9E%E5%B8%B0
         EMA(diff) = EMA(Short) - EMA(Long)
         過去N分のEMA(diff)から回帰直線の傾きを求め、その傾き(a)で ゴールデンクロス、デットクロス、その他 を
         判定する。
-        　　a > +γ(+閾値) ->  ゴールデンクロス
-        　　-γ(-閾値) < a < +γ(+閾値) ->  どちらでもない
-        　　a < -γ(-閾値) ->  デットクロス
+        １．ゴールデンクロス判定
+            a(傾き) >= +γ(+閾値) かつ {EMA(diff)[last-1] > 0 かつ EMA(diff)[last] <= 0}
+            →　EMA(diff)が正から負に反転した場合
+        ２．デットクロス判定
+            a(傾き) < +γ(+閾値) かつ {EMA(diff)[last-1] < 0 かつ EMA(diff)[last] >= 0}
+            →　EMA(diff)が負から正に反転した場合
+        ３．その他判定（何もしない）
+            -γ(-閾値) < a(傾き) < +γ(+閾値)
         """
         df_ema = self.get_ema(candle_type, n_short, n_long)
+        df_diff_ema = pd.DataFrame()
+        df_diff_ema["time"] = pd.DataFrame(df_ema["time"])
+        df_diff_ema["n_diff"] = df_ema["n_short"] - df_ema["n_long"]
+
+        clf = linear_model.LinearRegression()
+        x = pd.DataFrame(df_diff_ema["time"],
+                         columns=list("time")).values.tolist()
+        y = pd.DataFrame(df_diff_ema["n_diff"],
+                         columns=list("n_diff")).values.tolist()
+
+        clf.fit(x, y)        # 予測モデルを作成
+        a = clf.coef_        # 回帰係数（傾き）
+        b = clf.intercept_   # 切片 (誤差)
+        c = clf.score(x, y)  # 決定係数
+
+        msg = "予想モデル：y = {0}x + {1} 決定係数：{2}"
+        self.myLogger.debug(msg.format(a, b, c))
+
+        THRESHOLD = 0.0
+        if((a >= THRESHOLD) and
+                (df_diff_ema["n_diff"][-2:] < 0) and
+                (df_diff_ema["n_diff"][-1:] >= 0)):
+            # golden cross
+            return EmaCross.GOLDEN_CROSS
+        elif((a < THRESHOLD) and
+                (df_diff_ema["n_diff"][-2:] > 0) and
+                (df_diff_ema["n_diff"][-1:] <= 0)):
+            # dead cross
+            return EmaCross.DEAD_CROSS
 
         # TODO Enumでゴールデンクロス、デットクロス、その他を作成する
-        return True
+        # other cross
+        return EmaCross.OTHER_CROSS
 
     def get_rsi(self, n: int, candle_type):
         """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
@@ -378,18 +424,31 @@ class AutoOrder:
         return f_sell_order_price - (self.SELL_ORDER_RANGE * THRESHOLD)
 
     def is_buy_order(self):
-        """ 買い注文の判定 """
-        f_rsi = float(self.mtau.get_rsi(self.mtau.RSI_N, "1min"))
+        """ 買い注文の判定
+        条件(condition)：
+            1. RSIが閾値(RSI_THRESHOLD)より小さい　かつ
+            2. EMSクロスがゴールデンクロスの場合
+        """
 
+        # 条件1
+        f_rsi = float(self.mtau.get_rsi(self.mtau.RSI_N, "1min"))
         last, _, _ = self.get_xrp_jpy_value()
         f_last = float(last)  # 現在値
-
         RSI_THRESHOLD = 40
-        msg = ("買い注文待ち 現在値：{0:.3f} RSI：{1:.3f} RSI閾値：{2}"
-               .format(f_last, f_rsi, RSI_THRESHOLD))
+        condition_1 = (f_rsi < RSI_THRESHOLD)
+
+        # 条件2
+        n_short = 9
+        n_long = 26
+        ema_cross_status = self.mtau.get_ema_cross_status(
+            "1min", n_short, n_long)
+        condition_2 = (ema_cross_status == EmaCross.GOLDEN_CROSS)
+
+        msg = ("買い注文待ち 現在値：{0:.3f} RSI：{1:.3f} RSI閾値：{2} EMSクロス：{3}"
+               .format(f_last, f_rsi, RSI_THRESHOLD, ema_cross_status))
         self.myLogger.debug(msg)
 
-        if(f_rsi < RSI_THRESHOLD):
+        if(condition_1 and condition_2):
             return True
 
         return False
