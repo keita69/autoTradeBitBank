@@ -126,8 +126,6 @@ class MyTechnicalAnalysisUtil:
         x = df_ema_x.values.tolist()
         y = df_ema_y.values.tolist()
 
-        self.myLogger.debug("EMA:\n{0}".format(df_ema))
-
         clf.fit(x, y)        # 予測モデルを作成
         a = clf.coef_        # 回帰係数（傾き）
         b = clf.intercept_   # 切片 (誤差)
@@ -136,6 +134,9 @@ class MyTechnicalAnalysisUtil:
         THRESHOLD = 0.0
         booby_value = df_ema_y["diff"][-2:-1].values[0]
         last_value = df_ema_y["diff"][-1:].values[0]
+
+        df_ema_debug = pd.concat([df_ema, df_ema_y], axis=1)
+        self.myLogger.debug("EMA:\n{0}".format(df_ema_debug))
 
         msg = "予想モデル：y = {0}x + {1} 決定係数：{2} Booby：{3} Last：{4}"
         self.myLogger.debug(msg.format(a, b, c, booby_value, last_value))
