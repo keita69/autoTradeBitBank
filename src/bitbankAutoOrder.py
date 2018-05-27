@@ -53,6 +53,8 @@ class MyTechnicalAnalysisUtil:
         utc = datetime.utcfromtimestamp(now)
 
         yyyymmdd = utc.strftime('%Y%m%d')
+        self.myLogger.debug(
+            "yyyymmdd={0} candle_type={1}".format(yyyymmdd, candle_type))
         candlestick = self.pubApi.get_candlestick(
             "xrp_jpy", candle_type, yyyymmdd)
 
