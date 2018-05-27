@@ -406,8 +406,8 @@ class AutoOrder:
         """ 売り注文(損切注文)の判定
                 条件(condition)：
             1. 含み損が損切価格より大きい　または
-            2. RSIが閾値(RSI_THRESHOLD)より大きい　かつ　EMSクロスがデッドクロスの場合　または
-            3. 含み損が損切価格のN％より大きい　かつ　EMSクロスがデッドクロスの場合
+            2. RSIが閾値(RSI_THRESHOLD)より大きい　かつ　含み損が損切価格の(n*100)％より大きい　または
+            3. EMSクロスがデッドクロスの場合
         """
 
         # 条件1
@@ -419,20 +419,19 @@ class AutoOrder:
         # 条件2
         RSI_THRESHOLD = 60
         f_rsi = float(self.mtau.get_rsi(9, "1min"))
-        n_short = 9
-        n_long = 26
-        status = self.mtau.get_ema_cross_status("1min", n_short, n_long)
         over_rsi = (f_rsi > RSI_THRESHOLD)
-        dead_cross = (status == EmaCross.DEAD_CROSS)
-        condition_2 = over_rsi and dead_cross
-
-        # 条件3
         n = 0.30
         f_stop_loss_price_n = float(
             self.get_stop_loss_price_n(sell_order_result, n))
         over_stop_loss_n = (f_stop_loss_price_n > f_last)
+        condition_2 = over_rsi and over_stop_loss_n
+
+        # 条件3
+        n_short = 9
+        n_long = 26
+        status = self.mtau.get_ema_cross_status("1min", n_short, n_long)
         dead_cross = (status == EmaCross.DEAD_CROSS)
-        condition_3 = (over_stop_loss_n and dead_cross)
+        condition_3 = dead_cross
 
         if(condition_1 or condition_2 or condition_3):
             msg = ("【損切判定されました 現在値：{0} 損切値：{1} 】"
