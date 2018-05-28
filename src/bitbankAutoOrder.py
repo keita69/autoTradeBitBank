@@ -679,7 +679,7 @@ class AutoOrder:
                 order_id = sell_market_result["order_id"]
                 f_amount = float(sell_market_result["executed_amount"])
                 f_sell = float(sell_market_result["price"])
-                f_buy = float(sell_market_result["price"])
+                f_buy = float(buy_order_result["price"])
                 f_benefit = (f_sell - f_buy) * f_amount
 
                 line_msg = "売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{2}"
