@@ -189,6 +189,7 @@ class MyLogger:
         formatter = logging.Formatter(
             "%(asctime)s %(name) %(levelname)s %(message)s")
         self.handler.setFormatter(formatter)
+        self.logger.addHandler(self.handler)
 
     def debug(self, msg):
         """ DEBUG	10	動作確認などデバッグの記録 """
