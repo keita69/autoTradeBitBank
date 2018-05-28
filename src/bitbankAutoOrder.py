@@ -652,6 +652,7 @@ class AutoOrder:
                     f_benefit, f_amount, order_id))
 
                 sell_order_result = sell_market_result
+                break
 
         return buy_order_result, sell_order_result
 
