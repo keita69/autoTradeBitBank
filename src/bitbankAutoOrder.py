@@ -8,7 +8,7 @@ import requests
 import pandas as pd
 import numpy as np
 import logging
-from logging import getLogger, StreamHandler, DEBUG
+from logging import getLogger, FileHandler, StreamHandler, DEBUG
 from datetime import datetime, timezone, timedelta
 from sklearn import linear_model
 from enum import Enum
@@ -60,10 +60,10 @@ class MyTechnicalAnalysisUtil:
 
         ohlcv = candlestick["candlestick"][0]["ohlcv"]
         df_ohlcv = pd.DataFrame(ohlcv,
-                                columns=["open",   # 始値
+                                columns=["open",    # 始値
                                          "hight",   # 高値
                                          "low",     # 安値
-                                         "close",     # 終値
+                                         "close",   # 終値
                                          "amount",  # 出来高
                                          "time"])   # UnixTime
 
@@ -74,12 +74,12 @@ class MyTechnicalAnalysisUtil:
                 "xrp_jpy", candle_type, str_yesterday)
             yday_ohlcv = yday_candlestick["candlestick"][0]["ohlcv"]
             df_yday_ohlcv = pd.DataFrame(yday_ohlcv,
-                                         columns=["open",   # 始値
-                                                  "hight",   # 高値
-                                                  "low",     # 安値
+                                         columns=["open",      # 始値
+                                                  "hight",     # 高値
+                                                  "low",       # 安値
                                                   "close",     # 終値
-                                                  "amount",  # 出来高
-                                                  "time"])   # UnixTime
+                                                  "amount",    # 出来高
+                                                  "time"])     # UnixTime
             df_ohlcv.append(df_yday_ohlcv, ignore_index=True)  # 前日分追加
 
         return df_ohlcv
@@ -210,14 +210,18 @@ class MyLogger:
         """ コンストラクタ """
         # 参考：http://joemphilips.com/post/python_logging/
         self.logger = getLogger(__name__)
-        self.handler = StreamHandler()
-        self.handler.setLevel(DEBUG)
         self.logger.setLevel(DEBUG)
-        self.logger.addHandler(self.handler)
         formatter = logging.Formatter(
             "%(asctime)s %(name) %(levelname)s %(message)s")
-        self.handler.setFormatter(formatter)
-        self.logger.addHandler(self.handler)
+        sh = StreamHandler()
+        sh.setLevel(DEBUG)
+        sh.setFormatter(formatter)
+        self.logger.addHandler(sh)
+
+        fh = FileHandler(filename='log.txt')
+        fh.setLevel(DEBUG)
+        fh.setFormatter(formatter)
+        self.logger.addHandler(fh)
 
     def debug(self, msg):
         """ DEBUG	10	動作確認などデバッグの記録 """
@@ -562,7 +566,8 @@ class AutoOrder:
         )
 
         self.notify_line(("買い注文発生 {0}円 ID：{1}")
-                         .format(buy_order_info["price"], buy_value["order_id"]))
+                         .format(buy_order_info["price"],
+                                 buy_value["order_id"]))
 
         # 買い注文約定待ち
         while True:
@@ -609,7 +614,8 @@ class AutoOrder:
         )
 
         self.notify_line(("売り注文発生 {0}円 ID：{1}")
-                         .format(sell_order_info["price"], sell_order_result["order_id"]))
+                         .format(sell_order_info["price"],
+                                 sell_order_result["order_id"]))
 
         while True:
             time.sleep(self.POLLING_SEC_SELL)
