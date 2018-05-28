@@ -50,9 +50,9 @@ class MyTechnicalAnalysisUtil:
 
     def get_candlestick(self, n: int, candle_type):
         now = time.time()
-        utc = datetime.utcfromtimestamp(now)
+        now_utc = datetime.utcfromtimestamp(now)
 
-        yyyymmdd = utc.strftime('%Y%m%d')
+        yyyymmdd = now_.strftime('%Y%m%d')
         self.myLogger.debug(
             "yyyymmdd={0} candle_type={1}".format(yyyymmdd, candle_type))
         candlestick = self.pubApi.get_candlestick(
@@ -68,7 +68,7 @@ class MyTechnicalAnalysisUtil:
                                          "time"])   # UnixTime
 
         if(len(ohlcv) <= n):  # データが不足している場合
-            yesterday = (datetime.now() - datetime.timedelta(days=1))
+            yesterday = now_utc - timedelta(days=1)
             str_yesterday = yesterday.strftime('%Y%m%d')
             yday_candlestick = self.pubApi.get_candlestick(
                 "xrp_jpy", candle_type, str_yesterday)
