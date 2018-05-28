@@ -52,7 +52,7 @@ class MyTechnicalAnalysisUtil:
         now = time.time()
         now_utc = datetime.utcfromtimestamp(now)
 
-        yyyymmdd = now_.strftime('%Y%m%d')
+        yyyymmdd = now_utc.strftime('%Y%m%d')
         self.myLogger.debug(
             "yyyymmdd={0} candle_type={1}".format(yyyymmdd, candle_type))
         candlestick = self.pubApi.get_candlestick(
