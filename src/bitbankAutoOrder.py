@@ -50,9 +50,9 @@ class MyTechnicalAnalysisUtil:
 
     def get_candlestick(self, n: int, candle_type):
         now = time.time()
-        utc = datetime.utcfromtimestamp(now)
+        now_utc = datetime.utcfromtimestamp(now)
 
-        yyyymmdd = utc.strftime('%Y%m%d')
+        yyyymmdd = now_utc.strftime('%Y%m%d')
         self.myLogger.debug(
             "yyyymmdd={0} candle_type={1}".format(yyyymmdd, candle_type))
         candlestick = self.pubApi.get_candlestick(
@@ -68,7 +68,7 @@ class MyTechnicalAnalysisUtil:
                                          "time"])   # UnixTime
 
         if(len(ohlcv) <= n):  # データが不足している場合
-            yesterday = (datetime.now() - datetime.timedelta(days=1))
+            yesterday = now_utc - timedelta(days=1)
             str_yesterday = yesterday.strftime('%Y%m%d')
             yday_candlestick = self.pubApi.get_candlestick(
                 "xrp_jpy", candle_type, str_yesterday)
@@ -110,8 +110,35 @@ class MyTechnicalAnalysisUtil:
             a(傾き) >= +γ(+閾値) かつ {EMA(diff)[last-1] > 0 かつ EMA(diff)[last] <= 0}
             →　EMA(diff)が正から負に反転した場合
         ２．デットクロス判定
-            a(傾き) < +γ(+閾値) かつ {EMA(diff)[last-1] < 0 かつ EMA(diff)[last] >= 0}
-            →　EMA(diff)が負から正に反転した場合
+            {(EMA(diff)[last-2] < 0 または EMA(diff)[last-1] < 0) かつ
+              EMA(diff)[last] >= 0}
+            →　EMA(diff)が負から正に反転した場合(最後の２つが同時にマイナスになることもある)
+
+            最後の２つが同時にマイナスになるパターン
+            2018-05-28 07:31:57,910 %(levelname)s EMA:
+                open   hight     low    ...     ema_short   ema_long      diff
+            443  64.220  64.239  64.220  ...     64.188285  64.165461  0.022825
+            444  64.230  64.230  64.199  ...     64.196428  64.170167  0.026261
+            445  64.229  64.230  64.173  ...     64.192343  64.170599  0.021743
+            446  64.179  64.217  64.173  ...     64.197274  64.174037  0.023238
+            447  64.211  64.217  64.181  ...     64.199619  64.176626  0.022993
+            448  64.217  64.217  64.200  ...     64.201495  64.179024  0.022471
+            449  64.209  64.251  64.209  ...     64.211396  64.184356  0.027040
+            450  64.251  64.251  64.191  ...     64.209117  64.185515  0.023602
+            451  64.191  64.200  64.080  ...     64.187094  64.179106  0.007987
+
+            2018-05-28 07:32:01,031 %(levelname)s EMA:
+                open   hight     low    ...     ema_short   ema_long      diff
+            444  64.230  64.230  64.199  ...     64.196428  64.170167  0.026261
+            445  64.229  64.230  64.173  ...     64.192343  64.170599  0.021743
+            446  64.179  64.217  64.173  ...     64.197274  64.174037  0.023238
+            447  64.211  64.217  64.181  ...     64.199619  64.176626  0.022993
+            448  64.217  64.217  64.200  ...     64.201495  64.179024  0.022471
+            449  64.209  64.251  64.209  ...     64.211396  64.184356  0.027040
+            450  64.251  64.251  64.191  ...     64.209117  64.185515  0.023602
+            451  64.191  64.200  64.002  ...     64.167694  64.171921 -0.004227
+            452  64.098  64.098  64.098  ...     64.153755  64.166445 -0.012691
+
         ３．その他判定（何もしない）
             -γ(-閾値) < a(傾き) < +γ(+閾値)
         """
@@ -132,19 +159,20 @@ class MyTechnicalAnalysisUtil:
         c = clf.score(x, y)  # 決定係数
 
         THRESHOLD = 0.0
-        booby_value = df_ema_y["diff"][-2:-1].values[0]
+        last3_value = df_ema_y["diff"][-3:-2].values[0]
+        last2_value = df_ema_y["diff"][-2:-1].values[0]
         last_value = df_ema_y["diff"][-1:].values[0]
 
         df_ema_debug = pd.concat([df_ema, df_ema_y], axis=1)
         self.myLogger.debug("EMA:\n{0}".format(df_ema_debug))
 
         msg = "予想モデル：y = {0}x + {1} 決定係数：{2} Booby：{3} Last：{4}"
-        self.myLogger.debug(msg.format(a, b, c, booby_value, last_value))
+        self.myLogger.debug(msg.format(a, b, c, last2_value, last_value))
 
-        if((a >= THRESHOLD) and (booby_value < 0) and (last_value >= 0)):
+        if((a >= THRESHOLD) and (last2_value < 0) and (last_value > 0)):
             # golden cross
             return EmaCross.GOLDEN_CROSS
-        elif((a < THRESHOLD) and (booby_value > 0) and (last_value <= 0)):
+        elif(((last3_value > 0) or (last2_value > 0)) and (last_value <= 0)):
             # dead cross
             return EmaCross.DEAD_CROSS
 
@@ -189,6 +217,7 @@ class MyLogger:
         formatter = logging.Formatter(
             "%(asctime)s %(name) %(levelname)s %(message)s")
         self.handler.setFormatter(formatter)
+        self.logger.addHandler(self.handler)
 
     def debug(self, msg):
         """ DEBUG	10	動作確認などデバッグの記録 """
@@ -652,6 +681,7 @@ class AutoOrder:
                     f_benefit, f_amount, order_id))
 
                 sell_order_result = sell_market_result
+                break
 
         return buy_order_result, sell_order_result
 
