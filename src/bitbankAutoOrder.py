@@ -682,7 +682,8 @@ class AutoOrder:
                 f_buy = float(buy_order_result["price"])
                 f_benefit = (f_sell - f_buy) * f_amount
 
-                msg = "デバッグ 売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{2} f_sell={3} f_buy={4}"
+                msg = ("デバッグ 売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP"
+                       "ID：{2} f_sell={3} f_buy={4}")
                 self.myLogger.debug(msg.format(
                     f_benefit, f_amount, order_id, f_sell, f_buy))
 
