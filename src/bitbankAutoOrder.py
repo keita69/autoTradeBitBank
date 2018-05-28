@@ -561,8 +561,8 @@ class AutoOrder:
             buy_order_info["orderType"]
         )
 
-        self.notify_line(("デバッグ 買い注文処理発生！！ ID：{0}")
-                         .format(buy_value["order_id"]))
+        self.notify_line(("買い注文発生 {0}円 ID：{1}")
+                         .format(buy_order_info["price"], buy_value["order_id"]))
 
         # 買い注文約定待ち
         while True:
@@ -587,7 +587,7 @@ class AutoOrder:
                     buy_order_result["order_id"]  # 注文ID
                 )
 
-                self.notify_line(("デバッグ 買い注文キャンセル処理発生！！ ID：{0}")
+                self.notify_line(("買い注文キャンセル処理発生！！ ID：{0}")
                                  .format(buy_value["order_id"]))
 
                 buy_cancel_price = self.get_buy_cancel_price(
@@ -608,8 +608,8 @@ class AutoOrder:
             sell_order_info["orderType"]   # 注文タイプ 指値 or 成行(limit or market))
         )
 
-        self.notify_line(("デバッグ 売り注文処理発生！！ ID：{0}")
-                         .format(sell_order_result["order_id"]))
+        self.notify_line(("売り注文発生 {0}円 ID：{1}")
+                         .format(sell_order_info["price"], sell_order_result["order_id"]))
 
         while True:
             time.sleep(self.POLLING_SEC_SELL)
@@ -628,7 +628,7 @@ class AutoOrder:
                 f_buy = float(buy_order_result["price"])
                 f_benefit = (f_sell - f_buy) * f_amount
 
-                line_msg = "売り注文が約定！ 利益：{0:.3f}円 x {1:.0f}XRP ID：{0}"
+                line_msg = "売り注文約定 利益：{0:.3f}円 x {1:.0f}XRP ID：{2}"
                 self.notify_line_stamp(line_msg.format(
                     f_benefit, f_amount, order_id), "1", "10")
                 self.myLogger.debug(line_msg.format(
@@ -674,7 +674,7 @@ class AutoOrder:
                 f_buy = float(sell_market_result["price"])
                 f_benefit = (f_sell - f_buy) * f_amount
 
-                line_msg = "売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{0}"
+                line_msg = "売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{2}"
                 self.notify_line_stamp(line_msg.format(
                     f_benefit, f_amount, order_id), "1", "104")
                 self.myLogger.debug(line_msg.format(
