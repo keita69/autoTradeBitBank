@@ -8,7 +8,8 @@ import requests
 import pandas as pd
 import numpy as np
 import logging
-from logging import getLogger, FileHandler, StreamHandler, DEBUG
+from logging import getLogger, StreamHandler, DEBUG
+from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime, timezone, timedelta
 from sklearn import linear_model
 from enum import Enum
@@ -218,10 +219,11 @@ class MyLogger:
         sh.setFormatter(formatter)
         self.logger.addHandler(sh)
 
-        fh = FileHandler(filename='log.txt')
-        fh.setLevel(DEBUG)
-        fh.setFormatter(formatter)
-        self.logger.addHandler(fh)
+        rfh = TimedRotatingFileHandler(
+            './log.txt', when="d", interval=1, backupCount=20)
+        rfh.setLevel(DEBUG)
+        rfh.setFormatter(formatter)
+        self.logger.addHandler(rfh)
 
     def debug(self, msg):
         """ DEBUG	10	動作確認などデバッグの記録 """
