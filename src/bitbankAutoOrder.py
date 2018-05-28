@@ -110,7 +110,7 @@ class MyTechnicalAnalysisUtil:
             a(傾き) >= +γ(+閾値) かつ {EMA(diff)[last-1] > 0 かつ EMA(diff)[last] <= 0}
             →　EMA(diff)が正から負に反転した場合
         ２．デットクロス判定
-            a(傾き) < +γ(+閾値) かつ {EMA(diff)[last-1] < 0 かつ EMA(diff)[last] >= 0}
+            {EMA(diff)[last-1] < 0 かつ EMA(diff)[last] >= 0}
             →　EMA(diff)が負から正に反転した場合
         ３．その他判定（何もしない）
             -γ(-閾値) < a(傾き) < +γ(+閾値)
@@ -144,7 +144,7 @@ class MyTechnicalAnalysisUtil:
         if((a >= THRESHOLD) and (booby_value < 0) and (last_value >= 0)):
             # golden cross
             return EmaCross.GOLDEN_CROSS
-        elif((a < THRESHOLD) and (booby_value > 0) and (last_value <= 0)):
+        elif((booby_value > 0) and (last_value <= 0)):
             # dead cross
             return EmaCross.DEAD_CROSS
 
