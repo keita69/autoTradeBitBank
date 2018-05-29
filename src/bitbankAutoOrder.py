@@ -515,7 +515,7 @@ class AutoOrder:
         df_ema = self.mtau.get_ema("1min", n_short, n_long)
         df_ema_diff = pd.DataFrame(
             df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
-        ema_abs_sum = df_ema_diff.abs().sum(axis=1).values[1]
+        ema_abs_sum = df_ema_diff.abs().sum(axis=0).values[1]
         condition_2 = (ema_cross_status == EmaCross.GOLDEN_CROSS) and \
                       (ema_abs_sum > 1)
 
