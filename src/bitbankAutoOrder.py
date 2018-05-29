@@ -510,6 +510,7 @@ class AutoOrder:
         # 条件2
         n_short = 9
         n_long = 26
+        EMS_DIFF_THRESHOLD = 0.3
         ema_cross_status = self.mtau.get_ema_cross_status(
             "1min", n_short, n_long)
         df_ema = self.mtau.get_ema("1min", n_short, n_long)
@@ -517,7 +518,7 @@ class AutoOrder:
             df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
         ema_abs_sum = df_ema_diff.abs().sum(axis=0).values[0]
         condition_2 = (ema_cross_status == EmaCross.GOLDEN_CROSS) and \
-                      (ema_abs_sum > 1)
+                      (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
         msg = ("買い注文待ち 現在値：{0: .3f} RSI：{1: .3f}"
                "RSI閾値：{2} EMSクロス：{3} EMS_SUM：{4}")
