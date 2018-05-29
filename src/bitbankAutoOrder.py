@@ -497,7 +497,7 @@ class AutoOrder:
         """ 買い注文の判定
         条件(condition)：
             1. RSIが閾値(RSI_THRESHOLD)より小さい　かつ
-            2. EMSクロスがゴールデンクロスの場合
+            2. EMSクロスがゴールデンクロスの場合　かつ　EMSクロスdiffの絶対値の総和が１以上
         """
 
         # 条件1
@@ -512,11 +512,17 @@ class AutoOrder:
         n_long = 26
         ema_cross_status = self.mtau.get_ema_cross_status(
             "1min", n_short, n_long)
-        condition_2 = (ema_cross_status == EmaCross.GOLDEN_CROSS)
+        df_ema = self.mtau.get_ema("1min", n_short, n_long)
+        df_ema_diff = pd.DataFrame(
+            df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
+        ema_abs_sum = df_ema_diff.abs().sum(axis=1)
+        condition_2 = (ema_cross_status == EmaCross.GOLDEN_CROSS) and \
+                      (ema_abs_sum > 1)
 
-        msg = ("買い注文待ち 現在値：{0:.3f} RSI：{1:.3f} RSI閾値：{2} EMSクロス：{3}"
-               .format(f_last, f_rsi, RSI_THRESHOLD, ema_cross_status))
-        self.myLogger.debug(msg)
+        msg = ("買い注文待ち 現在値：{0: .3f} RSI：{1: .3f}"
+               "RSI閾値：{2} EMSクロス：{3} EMS_SUM：{4}")
+        self.myLogger.debug(msg.format(
+            f_last, f_rsi, RSI_THRESHOLD, ema_cross_status, ema_abs_sum))
 
         if(condition_1 and condition_2):
             return True
