@@ -159,6 +159,8 @@ class MyTechnicalAnalysisUtil:
         b = clf.intercept_   # 切片 (誤差)
         c = clf.score(x, y)  # 決定係数
 
+        self.myLogger.debug("EMA_y:\n{0}".format(df_ema_y))
+
         THRESHOLD = 0.0
         last3_value = df_ema_y["diff"][-3:-2].values[0]
         last2_value = df_ema_y["diff"][-2:-1].values[0]
