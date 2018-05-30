@@ -82,6 +82,7 @@ class MyTechnicalAnalysisUtil:
                                                   "amount",    # 出来高
                                                   "time"])     # UnixTime
             df_ohlcv.append(df_yday_ohlcv, ignore_index=True)  # 前日分追加
+            self.myLogger.debug("yday ohlcv:\n{0}".format(df_ohlcv))
 
         return df_ohlcv
 
