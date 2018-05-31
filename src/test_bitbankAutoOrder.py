@@ -8,6 +8,12 @@ from bitbankAutoOrder import EmaCross
 from sklearn import linear_model
 
 
+def test_get_macd():
+    mtau = MyTechnicalAnalysisUtil()
+    df_macd = mtau.get_macd("1min")
+    print("MACD test \n{0}".format(df_macd))
+
+
 def test_ems_cross():
     n_short = 9
     n_long = 26

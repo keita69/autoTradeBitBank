@@ -100,7 +100,7 @@ class MyTechnicalAnalysisUtil:
         df_ema['ema_long'] = df_ema['close'].ewm(span=int(n_long)).mean()
 
         tail_index = (n_short) * -1
-        return df_ema[tail_index:]
+        return df_ema[tail_index:]  # 最終行からn_short行分返却
 
     def get_ema_cross_status(self, candle_type, n_short, n_long):
         """ EMAからゴールデンクロス、デットクロス、その他 状態 を返却する
@@ -182,6 +182,24 @@ class MyTechnicalAnalysisUtil:
 
         # other cross
         return EmaCross.OTHER_CROSS
+
+    def get_macd(self, candle_type):
+        """ MACD:MACDはEMA（指数平滑移動平均）の長期と短期の値を用いており、主にトレンドの方向性や転換期を見極める指標
+        計算式
+            MACD = 短期EMA（12） – 長期EMA（26）
+            シグナル = MACDの指数平滑移動平均（9）
+        参考
+        http://www.algo-fx-blog.com/macd-python-technical-indicators/
+        """
+        n_short = 12
+        n_long = 26
+        n_signal = 9
+        df_ema_short = self.get_ema(candle_type, n_short, n_long)
+        df_macd = pd.DataFrame()
+        df_macd["macd"] = df_ema_short["ema_short"] - df_ema_short["ema_long"]
+        df_macd["signal"] = df_macd.ewm(span=n_signal).mean()
+
+        return df_macd
 
     def get_rsi(self, n: int, candle_type):
         """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
