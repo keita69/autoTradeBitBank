@@ -527,7 +527,7 @@ class AutoOrder:
         # 条件3
         n_short = 9
         n_long = 26
-        status = self.mtau.get_macd_cross_status("1min", n_short, n_long)
+        status = self.mtau.get_macd_cross_status("1min")
         dead_cross = (status == MacdCross.DEAD_CROSS)
         condition_3 = dead_cross
 
@@ -571,8 +571,7 @@ class AutoOrder:
         n_short = 9
         n_long = 26
         EMS_DIFF_THRESHOLD = 0.3
-        ema_cross_status = self.mtau.get_macd_cross_status(
-            "1min", n_short, n_long)
+        ema_cross_status = self.mtau.get_macd_cross_status("1min")
         df_ema = self.mtau.get_ema("1min", n_short, n_long)
         df_ema_diff = pd.DataFrame(
             df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
