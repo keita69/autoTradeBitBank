@@ -50,6 +50,13 @@ class MyTechnicalAnalysisUtil:
         self.RSI_N = 14
 
     def get_candlestick(self, n: int, candle_type):
+        """ 最新のチャート情報（ロウソク）をN個以上取得する。
+        ・サンプル
+                   open   hight     low   close      amount           time
+            221  65.372  65.401  65.351  65.400  39242.7256  1527738060000
+            222  65.401  65.420  65.334  65.368  35837.8861  1527738120000
+            223  65.368  65.368  65.208  65.272  70144.5507  1527738180000
+        """
         now = time.time()
         now_utc = datetime.utcfromtimestamp(now)
 
@@ -84,6 +91,7 @@ class MyTechnicalAnalysisUtil:
             df_ohlcv.append(df_yday_ohlcv, ignore_index=True)  # 前日分追加
             self.myLogger.debug("yday ohlcv:\n{0}".format(df_ohlcv))
 
+        self.myLogger.debug("ohlcv:\n{0}".format(df_ohlcv))
         return df_ohlcv
 
     def get_ema(self, candle_type, n_short, n_long):
@@ -94,13 +102,14 @@ class MyTechnicalAnalysisUtil:
         参考
         http://www.algo-fx-blog.com/ema-how-to-do-with-python-pandas/
         """
+
         df_ema = self.get_candlestick(n_long, candle_type)
-
-        df_ema['ema_short'] = df_ema['close'].ewm(span=int(n_short)).mean()
         df_ema['ema_long'] = df_ema['close'].ewm(span=int(n_long)).mean()
+        df_ema['ema_short'] = df_ema['close'].ewm(span=int(n_short)).mean()
 
-        tail_index = (n_short) * -1
-        return df_ema[tail_index:]  # 最終行からn_short行分返却
+        self.myLogger.debug("ema:\n{0}".format(df_ema))
+
+        return df_ema
 
     def get_ema_cross_status(self, candle_type, n_short, n_long):
         """ EMAからゴールデンクロス、デットクロス、その他 状態 を返却する
@@ -146,29 +155,26 @@ class MyTechnicalAnalysisUtil:
         """
 
         df_ema = self.get_ema(candle_type, n_short, n_long)
+        df_ema["ema_diff"] = df_ema["ema_short"] - df_ema["ema_long"]
 
-        df_ema_x = pd.DataFrame(df_ema["time"], columns=["time"])
-        df_ema_y = pd.DataFrame(
-            df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
+        self.myLogger.debug("df_ema:\n{0}".format(df_ema))
 
         clf = linear_model.LinearRegression()
-        x = df_ema_x.values.tolist()
-        y = df_ema_y.values.tolist()
+
+        x = df_ema.loc[:, ['time']].as_matrix()
+        y = df_ema['ema_diff'].as_matrix()
 
         clf.fit(x, y)        # 予測モデルを作成
         a = clf.coef_        # 回帰係数（傾き）
         b = clf.intercept_   # 切片 (誤差)
         c = clf.score(x, y)  # 決定係数
 
-        self.myLogger.debug("EMA_y:\n{0}".format(df_ema_y))
+        self.myLogger.debug("EMA_y:\n{0}".format(df_ema))
 
         THRESHOLD = 0.0
-        last3_value = df_ema_y["diff"][-3:-2].values[0]
-        last2_value = df_ema_y["diff"][-2:-1].values[0]
-        last_value = df_ema_y["diff"][-1:].values[0]
-
-        df_ema_debug = pd.concat([df_ema, df_ema_y], axis=1)
-        self.myLogger.debug("EMA:\n{0}".format(df_ema_debug))
+        last3_value = df_ema["ema_diff"][-3:-2].values[0]
+        last2_value = df_ema["ema_diff"][-2:-1].values[0]
+        last_value = df_ema["ema_diff"][-1:].values[0]
 
         msg = "予想モデル：y = {0}x + {1} 決定係数：{2} Booby：{3} Last：{4}"
         self.myLogger.debug(msg.format(a, b, c, last2_value, last_value))
