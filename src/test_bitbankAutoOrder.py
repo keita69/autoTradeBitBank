@@ -4,8 +4,19 @@ import pytest
 import python_bitbankcc
 from bitbankAutoOrder import MyTechnicalAnalysisUtil
 from bitbankAutoOrder import AutoOrder
-from bitbankAutoOrder import EmaCross
+from bitbankAutoOrder import EmaCross, MacdCross
 from sklearn import linear_model
+
+
+def test_get_macd_cross_status():
+    mtau = MyTechnicalAnalysisUtil()
+    macd_cross_status = mtau.get_macd_cross_status("1min")
+
+    condition_1 = (macd_cross_status == MacdCross.GOLDEN_CROSS)
+    condition_2 = (macd_cross_status == MacdCross.DEAD_CROSS)
+    condition_3 = (macd_cross_status == MacdCross.OTHER_CROSS)
+
+    assert (condition_1 or condition_2 or condition_3)
 
 
 def test_get_macd():

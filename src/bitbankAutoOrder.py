@@ -34,6 +34,13 @@ class EmaCross(Enum):
     OTHER_CROSS = -1
 
 
+class MacdCross(Enum):
+    """ MACDのクロス状態を定義 """
+    GOLDEN_CROSS = 1
+    DEAD_CROSS = 0
+    OTHER_CROSS = -1
+
+
 class MyTechnicalAnalysisUtil:
     """ テクニカル分析のユーティリティクラス
     https://www.rakuten-sec.co.jp/MarketSpeed/onLineHelp/msman2_5_1_2.html
@@ -188,6 +195,32 @@ class MyTechnicalAnalysisUtil:
 
         # other cross
         return EmaCross.OTHER_CROSS
+
+    def get_macd_cross_status(self, candle_type):
+        """
+        ・シグナルをMACDが下から上へ抜けた時＝上昇トレンド(＝買いシグナル)
+        ・シグナルをMACDが上から下へ抜けた時＝下降トレンド(＝売りシグナル)
+        """
+        macd = self.get_macd("1min")
+        macd_head = macd.head(3)
+
+        macd_list = macd_head["macd"].values.tolist()
+        signal_list = macd_head["signal"].values.tolist()
+
+        condition_1 = ((macd_list[0] > signal_list[0]) and
+                       (macd_list[1] < signal_list[1]))  # 買いシグナル
+        condition_2 = ((macd_list[0] < signal_list[0]) and
+                       (macd_list[1] > signal_list[1]))  # 売りシグナル
+
+        if(condition_1):
+            # golden cross
+            return MacdCross.GOLDEN_CROSS
+        elif(condition_2):
+            # dead cross
+            return MacdCross.DEAD_CROSS
+
+        # other cross
+        return MacdCross.OTHER_CROSS
 
     def get_macd(self, candle_type):
         """ MACD:MACDはEMA（指数平滑移動平均）の長期と短期の値を用いており、主にトレンドの方向性や転換期を見極める指標
@@ -494,8 +527,8 @@ class AutoOrder:
         # 条件3
         n_short = 9
         n_long = 26
-        status = self.mtau.get_ema_cross_status("1min", n_short, n_long)
-        dead_cross = (status == EmaCross.DEAD_CROSS)
+        status = self.mtau.get_macd_cross_status("1min", n_short, n_long)
+        dead_cross = (status == MacdCross.DEAD_CROSS)
         condition_3 = dead_cross
 
         if(condition_1 or condition_2 or condition_3):
@@ -538,13 +571,13 @@ class AutoOrder:
         n_short = 9
         n_long = 26
         EMS_DIFF_THRESHOLD = 0.3
-        ema_cross_status = self.mtau.get_ema_cross_status(
+        ema_cross_status = self.mtau.get_macd_cross_status(
             "1min", n_short, n_long)
         df_ema = self.mtau.get_ema("1min", n_short, n_long)
         df_ema_diff = pd.DataFrame(
             df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
         ema_abs_sum = df_ema_diff.abs().sum(axis=0).values[0]
-        condition_2 = (ema_cross_status == EmaCross.GOLDEN_CROSS) and \
+        condition_2 = (ema_cross_status == MacdCross.GOLDEN_CROSS) and \
                       (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
         msg = ("買い注文待ち 現在値：{0: .3f} RSI：{1: .3f}"
