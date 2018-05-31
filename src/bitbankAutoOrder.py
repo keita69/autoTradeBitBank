@@ -1,21 +1,16 @@
-# -*- coding: utf-8 -*-
-
 import os
 import sys
-import traceback
 import time
-import requests
-import pandas as pd
-import numpy as np
 import logging
 from logging import getLogger, StreamHandler, DEBUG
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime, timezone, timedelta
-from sklearn import linear_model
 from enum import Enum
-import python_bitbankcc
 
-from datetime import datetime, timedelta, timezone
+import requests
+import pandas as pd
+import python_bitbankcc
+from sklearn import linear_model
 
 
 class MyUtil:
@@ -201,7 +196,7 @@ class MyTechnicalAnalysisUtil:
         ・シグナルをMACDが下から上へ抜けた時＝上昇トレンド(＝買いシグナル)
         ・シグナルをMACDが上から下へ抜けた時＝下降トレンド(＝売りシグナル)
         """
-        macd = self.get_macd("1min")
+        macd = self.get_macd(candle_type)
         macd_head = macd.head(3)
 
         macd_list = macd_head["macd"].values.tolist()
@@ -406,8 +401,7 @@ class AutoOrder:
 
     def get_active_orders(self):
         """ 現在のアクティブ注文情報を取得 """
-        activeOrders = self.prvApi.get_active_orders('xrp_jpy')
-        return activeOrders
+        return self.prvApi.get_active_orders('xrp_jpy')
 
     def is_fully_filled(self, orderResult, threshold_price):
         """ 注文の約定を判定 """
@@ -525,8 +519,6 @@ class AutoOrder:
         condition_2 = over_rsi and over_stop_loss_n
 
         # 条件3
-        n_short = 9
-        n_long = 26
         status = self.mtau.get_macd_cross_status("1min")
         dead_cross = (status == MacdCross.DEAD_CROSS)
         condition_3 = dead_cross
@@ -799,33 +791,35 @@ class AutoOrder:
 # main
 if __name__ == '__main__':
     ao = AutoOrder()
+    count = 0
 
     try:
         for i in range(0, ao.LOOP_COUNT_MAIN):
+            count = count + 1
             ao.myLogger.info("#############################################")
             ao.myLogger.info("=== 実験[NO.{0}] ===".format(i))
             ao.order_buy_sell()
             time.sleep(ao.POLLING_SEC_MAIN)
 
             activeOrders = ao.get_active_orders()["orders"]
-            if len(activeOrders) != 0:
+            if not activeOrders:
                 ao.notify_line_stamp("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)), "1", "422")
                 ao.myLogger.debug("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)))
-                for i in range(len(activeOrders)):
+                for j in range(activeOrders):
                     ao.myLogger.debug(
-                        "現在のオーダー一覧 :{0}".format(activeOrders[i]))
+                        "現在のオーダー一覧 :{0}".format(activeOrders[j]))
 
                 break  # Mainループブレイク
 
         ao.get_balances()
-        ao.notify_line_stamp("自動売買が終了！処理回数：{0}回".format(i + 1), "2", "516")
 
     except KeyboardInterrupt as ki:
         ao.notify_line_stamp("自動売買が中断されました 詳細：{0}".format(ki), "1", "3")
     except BaseException as be:
         ao.notify_line_stamp("システムエラーが発生しました！ 詳細：{0}".format(be), "1", "17")
         raise BaseException
-
-    sys.exit()
+    finally:
+        ao.notify_line_stamp("自動売買が終了！処理回数：{0}回".format(count), "2", "516")
+        sys.exit()

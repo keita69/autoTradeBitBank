@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import pytest
-import python_bitbankcc
 from bitbankAutoOrder import MyTechnicalAnalysisUtil
 from bitbankAutoOrder import AutoOrder
 from bitbankAutoOrder import EmaCross, MacdCross
-from sklearn import linear_model
 
 
 def test_get_macd_cross_status():
@@ -97,6 +94,7 @@ def test_get_ema():
     n_long = 26
     mtau = MyTechnicalAnalysisUtil()
     ema = mtau.get_ema("1min", n_short, n_long)
+    print(ema)
 
 
 def test_get_xrp_jpy_value():
