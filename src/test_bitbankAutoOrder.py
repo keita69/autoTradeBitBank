@@ -19,21 +19,7 @@ def test_get_macd_cross_status():
 def test_get_macd():
     mtau = MyTechnicalAnalysisUtil()
     df_macd = mtau.get_macd("1min")
-    print("MACD test \n{0}".format(df_macd))
-
-
-def test_ems_cross():
-    n_short = 9
-    n_long = 26
-    mtau = MyTechnicalAnalysisUtil()
-    ema_cross_status = mtau.get_ema_cross_status(
-        "1min", n_short, n_long)
-
-    condition_1 = (ema_cross_status == EmaCross.GOLDEN_CROSS)
-    condition_2 = (ema_cross_status == EmaCross.DEAD_CROSS)
-    condition_3 = (ema_cross_status == EmaCross.OTHER_CROSS)
-
-    assert (condition_1 or condition_2 or condition_3)
+    assert df_macd.values is not None
 
 
 def test_is_stop_loss():
@@ -94,7 +80,7 @@ def test_get_ema():
     n_long = 26
     mtau = MyTechnicalAnalysisUtil()
     ema = mtau.get_ema("1min", n_short, n_long)
-    print(ema)
+    assert ema is not None
 
 
 def test_get_xrp_jpy_value():

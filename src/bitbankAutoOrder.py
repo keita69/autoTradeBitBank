@@ -51,7 +51,7 @@ class MyTechnicalAnalysisUtil:
         self.myLogger = MyLogger()
         self.RSI_N = 14
 
-    def get_candlestick(self, n: int, candle_type):
+    def get_candlestick(self, candle_type):
         """ 最新のチャート情報（ロウソク）をN個以上取得する。
         ・サンプル
                    open   hight     low   close      amount           time
@@ -63,8 +63,8 @@ class MyTechnicalAnalysisUtil:
         now_utc = datetime.utcfromtimestamp(now)
 
         yyyymmdd = now_utc.strftime('%Y%m%d')
-        self.myLogger.debug(
-            "yyyymmdd={0} candle_type={1}".format(yyyymmdd, candle_type))
+        # self.myLogger.debug(
+        #    "yyyymmdd={0} candle_type={1}".format(yyyymmdd, candle_type))
         candlestick = self.pubApi.get_candlestick(
             "xrp_jpy", candle_type, yyyymmdd)
 
@@ -77,23 +77,21 @@ class MyTechnicalAnalysisUtil:
                                          "amount",  # 出来高
                                          "time"])   # UnixTime
 
-        if len(ohlcv) <= n:  # データが不足している場合
-            yesterday = now_utc - timedelta(days=1)
-            str_yesterday = yesterday.strftime('%Y%m%d')
-            yday_candlestick = self.pubApi.get_candlestick(
-                "xrp_jpy", candle_type, str_yesterday)
-            yday_ohlcv = yday_candlestick["candlestick"][0]["ohlcv"]
-            df_yday_ohlcv = pd.DataFrame(yday_ohlcv,
-                                         columns=["open",      # 始値
-                                                  "hight",     # 高値
-                                                  "low",       # 安値
-                                                  "close",     # 終値
-                                                  "amount",    # 出来高
-                                                  "time"])     # UnixTime
-            df_ohlcv.append(df_yday_ohlcv, ignore_index=True)  # 前日分追加
-            self.myLogger.debug("yday ohlcv:\n{0}".format(df_ohlcv))
+        yesterday = now_utc - timedelta(days=1)
+        str_yesterday = yesterday.strftime('%Y%m%d')
+        yday_candlestick = self.pubApi.get_candlestick(
+            "xrp_jpy", candle_type, str_yesterday)
+        yday_ohlcv = yday_candlestick["candlestick"][0]["ohlcv"]
+        df_yday_ohlcv = pd.DataFrame(yday_ohlcv,
+                                     columns=["open",      # 始値
+                                              "hight",     # 高値
+                                              "low",       # 安値
+                                              "close",     # 終値
+                                              "amount",    # 出来高
+                                              "time"])     # UnixTime
+        df_yday_ohlcv.append(df_ohlcv, ignore_index=True)  # 前日分追加
 
-        self.myLogger.debug("ohlcv:\n{0}".format(df_ohlcv))
+        # self.myLogger.debug("ohlcv:\n{0}".format(df_ohlcv))
         return df_ohlcv
 
     def get_ema(self, candle_type, n_short, n_long):
@@ -105,91 +103,13 @@ class MyTechnicalAnalysisUtil:
         http://www.algo-fx-blog.com/ema-how-to-do-with-python-pandas/
         """
 
-        df_ema = self.get_candlestick(n_long, candle_type)
+        df_ema = self.get_candlestick(candle_type)
         df_ema['ema_long'] = df_ema['close'].ewm(span=int(n_long)).mean()
         df_ema['ema_short'] = df_ema['close'].ewm(span=int(n_short)).mean()
 
-        self.myLogger.debug("ema:\n{0}".format(df_ema))
+        # self.myLogger.debug("ema:\n{0}".format(df_ema))
 
         return df_ema
-
-    def get_ema_cross_status(self, candle_type, n_short, n_long):
-        """ EMAからゴールデンクロス、デットクロス、その他 状態 を返却する
-        https://pythondatascience.plavox.info/scikit-learn/%E7%B7%9A%E5%BD%A2%E5%9B%9E%E5%B8%B0
-        EMA(diff) = EMA(Short) - EMA(Long)
-        過去N分のEMA(diff)から回帰直線の傾きを求め、その傾き(a)で ゴールデンクロス、デットクロス、その他 を
-        判定する。
-        １．ゴールデンクロス判定
-            a(傾き) >= +γ(+閾値) かつ {EMA(diff)[last-1] > 0 かつ EMA(diff)[last] <= 0}
-            →　EMA(diff)が正から負に反転した場合
-        ２．デットクロス判定
-            {(EMA(diff)[last-2] < 0 または EMA(diff)[last-1] < 0) かつ
-              EMA(diff)[last] >= 0}
-            →　EMA(diff)が負から正に反転した場合(最後の２つが同時にマイナスになることもある)
-
-            最後の２つが同時にマイナスになるパターン
-            2018-05-28 07:31:57,910 %(levelname)s EMA:
-                open   hight     low    ...     ema_short   ema_long      diff
-            443  64.220  64.239  64.220  ...     64.188285  64.165461  0.022825
-            444  64.230  64.230  64.199  ...     64.196428  64.170167  0.026261
-            445  64.229  64.230  64.173  ...     64.192343  64.170599  0.021743
-            446  64.179  64.217  64.173  ...     64.197274  64.174037  0.023238
-            447  64.211  64.217  64.181  ...     64.199619  64.176626  0.022993
-            448  64.217  64.217  64.200  ...     64.201495  64.179024  0.022471
-            449  64.209  64.251  64.209  ...     64.211396  64.184356  0.027040
-            450  64.251  64.251  64.191  ...     64.209117  64.185515  0.023602
-            451  64.191  64.200  64.080  ...     64.187094  64.179106  0.007987
-
-            2018-05-28 07:32:01,031 %(levelname)s EMA:
-                open   hight     low    ...     ema_short   ema_long      diff
-            444  64.230  64.230  64.199  ...     64.196428  64.170167  0.026261
-            445  64.229  64.230  64.173  ...     64.192343  64.170599  0.021743
-            446  64.179  64.217  64.173  ...     64.197274  64.174037  0.023238
-            447  64.211  64.217  64.181  ...     64.199619  64.176626  0.022993
-            448  64.217  64.217  64.200  ...     64.201495  64.179024  0.022471
-            449  64.209  64.251  64.209  ...     64.211396  64.184356  0.027040
-            450  64.251  64.251  64.191  ...     64.209117  64.185515  0.023602
-            451  64.191  64.200  64.002  ...     64.167694  64.171921 -0.004227
-            452  64.098  64.098  64.098  ...     64.153755  64.166445 -0.012691
-
-        ３．その他判定（何もしない）
-            -γ(-閾値) < a(傾き) < +γ(+閾値)
-        """
-
-        df_ema = self.get_ema(candle_type, n_short, n_long)
-        df_ema["ema_diff"] = df_ema["ema_short"] - df_ema["ema_long"]
-
-        self.myLogger.debug("df_ema:\n{0}".format(df_ema))
-
-        clf = linear_model.LinearRegression()
-
-        x = df_ema.loc[:, ['time']].as_matrix()
-        y = df_ema['ema_diff'].as_matrix()
-
-        clf.fit(x, y)        # 予測モデルを作成
-        a = clf.coef_        # 回帰係数（傾き）
-        b = clf.intercept_   # 切片 (誤差)
-        c = clf.score(x, y)  # 決定係数
-
-        self.myLogger.debug("EMA_y:\n{0}".format(df_ema))
-
-        THRESHOLD = 0.0
-        last3_value = df_ema["ema_diff"][-3:-2].values[0]
-        last2_value = df_ema["ema_diff"][-2:-1].values[0]
-        last_value = df_ema["ema_diff"][-1:].values[0]
-
-        msg = "予想モデル：y = {0}x + {1} 決定係数：{2} Booby：{3} Last：{4}"
-        self.myLogger.debug(msg.format(a, b, c, last2_value, last_value))
-
-        if (a >= THRESHOLD) and (last2_value < 0) and (last_value > 0):
-            # golden cross
-            return EmaCross.GOLDEN_CROSS
-        elif ((last3_value > 0) or (last2_value > 0)) and (last_value <= 0):
-            # dead cross
-            return EmaCross.DEAD_CROSS
-
-        # other cross
-        return EmaCross.OTHER_CROSS
 
     def get_macd_cross_status(self, candle_type):
         """
@@ -197,15 +117,15 @@ class MyTechnicalAnalysisUtil:
         ・シグナルをMACDが上から下へ抜けた時＝下降トレンド(＝売りシグナル)
         """
         macd = self.get_macd(candle_type)
-        macd_head = macd.head(3)
+        mhd = macd.tail(2)
+        mhd["diff"] = mhd["macd"] - mhd["signal"]
 
-        macd_list = macd_head["macd"].values.tolist()
-        signal_list = macd_head["signal"].values.tolist()
-
-        condition_1 = ((macd_list[0] > signal_list[0]) and
-                       (macd_list[1] < signal_list[1]))  # 買いシグナル
-        condition_2 = ((macd_list[0] < signal_list[0]) and
-                       (macd_list[1] > signal_list[1]))  # 売りシグナル
+        self.myLogger.debug(
+            "\n======== macd_head =======\n\n {0}".format(mhd))
+        condition_1 = (mhd["diff"].values[0] >= 0) and (
+            mhd["diff"].values[1] < 0)  # 買いシグナル
+        condition_2 = (mhd["diff"].values[0] <= 0) and (
+            mhd["diff"].values[1] > 0)  # 売りシグナル
 
         if condition_1:
             # golden cross
@@ -228,12 +148,13 @@ class MyTechnicalAnalysisUtil:
         n_short = 12
         n_long = 26
         n_signal = 9
-        df_ema_short = self.get_ema(candle_type, n_short, n_long)
-        df_macd = pd.DataFrame()
-        df_macd["macd"] = df_ema_short["ema_short"] - df_ema_short["ema_long"]
-        df_macd["signal"] = df_macd.ewm(span=n_signal).mean()
+        df_ema = self.get_ema(candle_type, n_short, n_long)
+        df_ema["macd"] = df_ema["ema_short"] - df_ema["ema_long"]
+        df_ema["signal"] = df_ema["macd"].ewm(span=n_signal).mean()
+        # self.myLogger.debug(
+        #    "\n======== df_ema =======\n\n {0}".format(df_ema))
 
-        return df_macd
+        return df_ema
 
     def get_rsi(self, n: int, candle_type):
         """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
@@ -241,7 +162,7 @@ class MyTechnicalAnalysisUtil:
         参考
         http://www.algo-fx-blog.com/rsi-python-ml-features/
         """
-        df_ohlcv = self.get_candlestick(n, candle_type)
+        df_ohlcv = self.get_candlestick(candle_type)
         df_close = df_ohlcv["close"].astype('float')
         df_diff = df_close.diff()
 
@@ -569,7 +490,7 @@ class AutoOrder:
             df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
         ema_abs_sum = df_ema_diff.abs().sum(axis=0).values[0]
         condition_2 = (ema_cross_status == MacdCross.GOLDEN_CROSS) and \
-                      (ema_abs_sum > EMS_DIFF_THRESHOLD)
+            (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
         msg = ("買い注文待ち 現在値：{0: .3f} RSI：{1: .3f}"
                "RSI閾値：{2} EMSクロス：{3} EMS_SUM：{4}")
