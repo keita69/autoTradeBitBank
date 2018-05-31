@@ -127,15 +127,16 @@ class MyTechnicalAnalysisUtil:
         condition_2 = (mhd["diff"].values[0] <= 0) and (
             mhd["diff"].values[1] > 0)  # 売りシグナル
 
+        status = MacdCross.OTHER_CROSS
         if condition_1:
             # golden cross
-            return MacdCross.GOLDEN_CROSS
+            status = MacdCross.GOLDEN_CROSS
         elif condition_2:
             # dead cross
-            return MacdCross.DEAD_CROSS
+            status = MacdCross.DEAD_CROSS
 
-        # other cross
-        return MacdCross.OTHER_CROSS
+        self.myLogger.debug("MACD Status:{0}".format(status))
+        return status
 
     def get_macd(self, candle_type):
         """ MACD:MACDはEMA（指数平滑移動平均）の長期と短期の値を用いており、主にトレンドの方向性や転換期を見極める指標
@@ -420,7 +421,7 @@ class AutoOrder:
                 条件(condition)：
             1. 含み損が損切価格より大きい　または
             2. RSIが閾値(RSI_THRESHOLD)より大きい　かつ　含み損が損切価格の(n*100)％より大きい　または
-            3. EMSクロスがデッドクロスの場合
+            3. MACDクロスがデッドクロスの場合
         """
 
         # 条件1
