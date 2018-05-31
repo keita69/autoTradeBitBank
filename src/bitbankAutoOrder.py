@@ -135,7 +135,7 @@ class MyTechnicalAnalysisUtil:
             # dead cross
             status = MacdCross.DEAD_CROSS
 
-        #self.myLogger.debug("MACD Status:{0}".format(status))
+        # self.myLogger.debug("MACD Status:{0}".format(status))
         return status
 
     def get_macd(self, candle_type):
@@ -489,7 +489,8 @@ class AutoOrder:
         df_ema = self.mtau.get_ema("1min", n_short, n_long)
         df_ema_diff = pd.DataFrame(
             df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
-        ema_abs_sum = df_ema_diff.abs().sum(axis=0).values[0]
+        df_ema_diff_short = df_ema_diff.tail(n_short)
+        ema_abs_sum = df_ema_diff_short.abs().sum(axis=0).values[0]
         condition_2 = (macd_cross_status == MacdCross.GOLDEN_CROSS) and \
             (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
