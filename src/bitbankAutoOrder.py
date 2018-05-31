@@ -120,8 +120,8 @@ class MyTechnicalAnalysisUtil:
         mhd = macd.tail(2)
         mhd["diff"] = mhd["macd"] - mhd["signal"]
 
-        self.myLogger.debug(
-            "\n======== macd_head =======\n\n {0}".format(mhd))
+        # self.myLogger.debug(
+        #    "\n======== macd_head =======\n\n {0}".format(mhd))
         condition_1 = (mhd["diff"].values[0] >= 0) and (
             mhd["diff"].values[1] < 0)  # 買いシグナル
         condition_2 = (mhd["diff"].values[0] <= 0) and (
@@ -135,7 +135,7 @@ class MyTechnicalAnalysisUtil:
             # dead cross
             status = MacdCross.DEAD_CROSS
 
-        self.myLogger.debug("MACD Status:{0}".format(status))
+        #self.myLogger.debug("MACD Status:{0}".format(status))
         return status
 
     def get_macd(self, candle_type):
@@ -471,7 +471,7 @@ class AutoOrder:
         """ 買い注文の判定
         条件(condition)：
             1. RSIが閾値(RSI_THRESHOLD)より小さい　かつ
-            2. EMSクロスがゴールデンクロスの場合　かつ　EMSクロスdiffの絶対値の総和が１以上
+            2. MACDクロスがゴールデンクロスの場合　かつ　EMSクロスdiffの絶対値の総和がEMS_DIFF_THRESHOLD以上
         """
 
         # 条件1
@@ -485,18 +485,18 @@ class AutoOrder:
         n_short = 9
         n_long = 26
         EMS_DIFF_THRESHOLD = 0.3
-        ema_cross_status = self.mtau.get_macd_cross_status("1min")
+        macd_cross_status = self.mtau.get_macd_cross_status("1min")
         df_ema = self.mtau.get_ema("1min", n_short, n_long)
         df_ema_diff = pd.DataFrame(
             df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
         ema_abs_sum = df_ema_diff.abs().sum(axis=0).values[0]
-        condition_2 = (ema_cross_status == MacdCross.GOLDEN_CROSS) and \
+        condition_2 = (macd_cross_status == MacdCross.GOLDEN_CROSS) and \
             (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
-        msg = ("買い注文待ち 現在値：{0: .3f} RSI：{1: .3f}"
-               "RSI閾値：{2} EMSクロス：{3} EMS_SUM：{4}")
+        msg = ("買い注文待ち 現在値：{0: .3f} RSI：{1: .3f} "
+               "RSI閾値：{2} MACD-CROSS：{3} EMS_SUM：{4}")
         self.myLogger.debug(msg.format(
-            f_last, f_rsi, RSI_THRESHOLD, ema_cross_status, ema_abs_sum))
+            f_last, f_rsi, RSI_THRESHOLD, macd_cross_status, ema_abs_sum))
 
         if condition_1 and condition_2:
             return True
