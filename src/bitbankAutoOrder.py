@@ -82,7 +82,7 @@ class MyTechnicalAnalysisUtil:
                                          "amount",  # 出来高
                                          "time"])   # UnixTime
 
-        if(len(ohlcv) <= n):  # データが不足している場合
+        if len(ohlcv) <= n:  # データが不足している場合
             yesterday = now_utc - timedelta(days=1)
             str_yesterday = yesterday.strftime('%Y%m%d')
             yday_candlestick = self.pubApi.get_candlestick(
@@ -186,10 +186,10 @@ class MyTechnicalAnalysisUtil:
         msg = "予想モデル：y = {0}x + {1} 決定係数：{2} Booby：{3} Last：{4}"
         self.myLogger.debug(msg.format(a, b, c, last2_value, last_value))
 
-        if((a >= THRESHOLD) and (last2_value < 0) and (last_value > 0)):
+        if (a >= THRESHOLD) and (last2_value < 0) and (last_value > 0):
             # golden cross
             return EmaCross.GOLDEN_CROSS
-        elif(((last3_value > 0) or (last2_value > 0)) and (last_value <= 0)):
+        elif ((last3_value > 0) or (last2_value > 0)) and (last_value <= 0):
             # dead cross
             return EmaCross.DEAD_CROSS
 
@@ -212,10 +212,10 @@ class MyTechnicalAnalysisUtil:
         condition_2 = ((macd_list[0] < signal_list[0]) and
                        (macd_list[1] > signal_list[1]))  # 売りシグナル
 
-        if(condition_1):
+        if condition_1:
             # golden cross
             return MacdCross.GOLDEN_CROSS
-        elif(condition_2):
+        elif condition_2:
             # dead cross
             return MacdCross.DEAD_CROSS
 
@@ -357,14 +357,14 @@ class AutoOrder:
 
     def check_env(self):
         """ 環境変数のチェック """
-        if ((self.api_key is None) or (self.api_secret is None)):
+        if (self.api_key is None) or (self.api_secret is None):
             emsg = '''
             Please set BITBANK_API_KEY or BITBANK_API_SECRET in Environment !!
             ex) exoprt BITBANK_API_KEY=XXXXXXXXXXXXXXXXXX
             '''
             raise EnvironmentError(emsg)
 
-        if (self.api_key is None):
+        if self.api_key is None:
             emsg = '''
             Please set LINE_NOTIFY_TOKEN in OS environment !!
             ex) exoprt LINE_NOTIFY_TOKEN=XXXXXXXXXXXXXXXXXX"
@@ -375,7 +375,7 @@ class AutoOrder:
         """ 現在のXRP資産の取得 """
         balances = self.prvApi.get_asset()
         for data in balances['assets']:
-            if((data['asset'] == 'jpy') or (data['asset'] == 'xrp')):
+            if (data['asset'] == 'jpy') or (data['asset'] == 'xrp'):
                 self.myLogger.info('●通貨：' + data['asset'])
                 self.myLogger.info('保有量：' + data['onhand_amount'])
 
@@ -384,9 +384,9 @@ class AutoOrder:
         balances = self.prvApi.get_asset()
         total_assets = 0.0
         for data in balances['assets']:
-            if (data['asset'] == 'jpy'):
+            if data['asset'] == 'jpy':
                 total_assets = total_assets + float(data['onhand_amount'])
-            elif (data['asset'] == 'xrp'):
+            elif data['asset'] == 'xrp':
                 xrp_last, _, _ = self.get_xrp_jpy_value()
                 xrp_assets = float(data['onhand_amount']) * float(xrp_last)
                 total_assets = total_assets + xrp_assets
@@ -426,7 +426,7 @@ class AutoOrder:
 
         # self.myLogger.debug("注文時の数量：{0:.0f}".format(f_start_amount))
         result = False
-        if (status == "FULLY_FILLED"):
+        if status == "FULLY_FILLED":
             msg = ("{0} 注文 約定済 {7}：{1:.3f} 円 x {2:.0f}({3}) "
                    "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
             self.myLogger.info(msg.format(side,
@@ -438,7 +438,7 @@ class AutoOrder:
                                           order_id,
                                           status))
             result = True
-        elif (status == "CANCELED_UNFILLED"):
+        elif status == "CANCELED_UNFILLED":
             msg = ("{0} 注文 キャンセル済 {7}：{1:.3f} 円 x {2:.0f}({3}) "
                    "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
             self.myLogger.info(msg.format(side,
@@ -531,7 +531,7 @@ class AutoOrder:
         dead_cross = (status == MacdCross.DEAD_CROSS)
         condition_3 = dead_cross
 
-        if(condition_1 or condition_2 or condition_3):
+        if condition_1 or condition_2 or condition_3:
             msg = ("【損切判定されました 現在値：{0} 損切値：{1} 】"
                    .format(f_last, stop_loss_price))
             self.myLogger.info(msg)
@@ -584,7 +584,7 @@ class AutoOrder:
         self.myLogger.debug(msg.format(
             f_last, f_rsi, RSI_THRESHOLD, ema_cross_status, ema_abs_sum))
 
-        if(condition_1 and condition_2):
+        if condition_1 and condition_2:
             return True
 
         return False
@@ -598,7 +598,7 @@ class AutoOrder:
         f_last = float(last)
         f_buy_cancel_price = float(self.get_buy_cancel_price(buy_order_result))
 
-        if (f_last > f_buy_cancel_price):
+        if f_last > f_buy_cancel_price:
             msg = ("現在値：{0:.3f} 買い注文価格：{1:.3f} 再注文価格：{2:.3f}"
                    .format(f_last, f_buy_order_price, f_buy_cancel_price))
             self.myLogger.debug(msg)
@@ -619,7 +619,7 @@ class AutoOrder:
         while True:
             time.sleep(self.POLLING_SEC_BUY)
 
-            if(self.is_buy_order()):
+            if self.is_buy_order():
                 break
 
         # 買い注文処理
@@ -649,11 +649,11 @@ class AutoOrder:
             buy_cancel_price = self.get_buy_cancel_price(buy_order_result)
 
             # 買い注文の約定判定
-            if(self.is_fully_filled(buy_order_result, buy_cancel_price)):
+            if self.is_fully_filled(buy_order_result, buy_cancel_price):
                 break
 
             # 買い注文のキャンセル判定
-            if (self.is_buy_order_cancel(buy_order_result)):
+            if self.is_buy_order_cancel(buy_order_result):
                 # 買い注文(成行)
                 buy_cancel_order_result = self.prvApi.cancel_order(
                     buy_order_result["pair"],     # ペア
@@ -694,8 +694,8 @@ class AutoOrder:
             )
 
             stop_loss_price = self.get_stop_loss_price(sell_order_status)
-            if (self.is_fully_filled(sell_order_status,
-                                     stop_loss_price)):  # 売り注文約定判定
+            if self.is_fully_filled(sell_order_status,
+                                    stop_loss_price):  # 売り注文約定判定
                 order_id = sell_order_status["order_id"]
                 f_amount = float(sell_order_status["executed_amount"])
                 f_sell = float(sell_order_status["price"])
@@ -711,7 +711,7 @@ class AutoOrder:
                 break
 
             stop_loss_price = self.get_stop_loss_price(sell_order_status)
-            if (self.is_stop_loss(sell_order_status)):  # 損切する場合
+            if self.is_stop_loss(sell_order_status):  # 損切する場合
                 # 約定前の売り注文キャンセル(結果のステータスはチェックしない)
                 cancel_result = self.prvApi.cancel_order(
                     sell_order_status["pair"],     # ペア
@@ -784,7 +784,7 @@ class AutoOrder:
         message = "{0}  {1} 総資産：{2}円".format(
             self.mu.get_timestamp(), message, total_assets)
 
-        if(stickerPackageId == "" or stickerId == ""):
+        if (stickerPackageId == "") or (stickerId == ""):
             payload = {'message': message}
         else:
             payload = {'message': message,
@@ -808,7 +808,7 @@ if __name__ == '__main__':
             time.sleep(ao.POLLING_SEC_MAIN)
 
             activeOrders = ao.get_active_orders()["orders"]
-            if(len(activeOrders) != 0):
+            if len(activeOrders) != 0:
                 ao.notify_line_stamp("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)), "1", "422")
                 ao.myLogger.debug("売買数が合いません！！！ 注文数：{0}".format(
