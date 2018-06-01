@@ -123,6 +123,7 @@ class AutoOrder:
         # f_start_amount = float(orderResult["remaining_amount"])    # 注文時の数量
         f_remaining_amount = float(orderResult["remaining_amount"])  # 未約定の数量
         f_executed_amount = float(orderResult["executed_amount"])    # 約定済み数量
+
         f_threshold_price = float(threshold_price)  # buy:買直し sell:損切 価格
         f_last = float(last)
 
@@ -166,16 +167,17 @@ class AutoOrder:
         return result
 
     def get_buy_order_info(self):
-        """ 買い注文のリクエスト情報を取得 """
-        _, _, buy = self.bitbank.get_xrp_jpy_value()
+        """ 買い注文(成行)のリクエスト情報を取得 """
+        # _, _, buy = self.bitbank.get_xrp_jpy_value()
         # 買い注文アルゴリズム
-        buyPrice = str(float(buy) - self.BUY_ORDER_RANGE)
+        # buyPrice = str(float(buy) - self.BUY_ORDER_RANGE)
 
-        buy_order_info = {"pair": "xrp_jpy",    # ペア
+        buy_order_info = {"pair": "xrp_jpy",      # ペア
                           "amount": self.AMOUNT,  # 注文枚数
-                          "price": buyPrice,    # 注文価格
-                          "orderSide": "buy",   # buy or sell
-                          "orderType": "limit"  # 指値注文の場合はlimit TODO 成行にする？
+                          # "price": buyPrice,    # 注文価格
+                          "price": 0,             # 注文価格
+                          "orderSide": "buy",     # buy
+                          "orderType": "market"   # 成行(market)
                           }
         return buy_order_info
 
@@ -256,34 +258,31 @@ class AutoOrder:
     def is_buy_order(self):
         """ 買い注文の判定
         条件(condition)：
-            1. RSIが閾値(RSI_THRESHOLD)より小さい　かつ
-            2. MACDクロスがゴールデンクロスの場合　かつ　EMSクロスdiffの絶対値の総和がEMS_DIFF_THRESHOLD以上
+            1. MACDクロスがゴールデンクロスの場合　かつ
+            2. EMSクロスdiffの絶対値の総和がEMS_DIFF_THRESHOLD以上
         """
 
-        # 条件1
-        f_rsi = float(self.mtau.get_rsi(self.mtau.RSI_N, "1min"))
         last, _, _ = self.bitbank.get_xrp_jpy_value()
         f_last = float(last)  # 現在値
-        RSI_THRESHOLD = 60
-        condition_1 = (f_rsi < RSI_THRESHOLD)
+
+        # 条件1
+        macd_status = self.mtau.get_macd_cross_status("1min")
+        condition_1 = (macd_status == MacdCross.GOLDEN_CROSS)
 
         # 条件2
         n_short = 9
         n_long = 26
         EMS_DIFF_THRESHOLD = 0.3
-        macd_cross_status = self.mtau.get_macd_cross_status("1min")
         df_ema = self.mtau.get_ema("1min", n_short, n_long)
         df_ema_diff = pd.DataFrame(
             df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
         df_ema_diff_short = df_ema_diff.tail(n_short)
         ema_abs_sum = df_ema_diff_short.abs().sum(axis=0).values[0]
-        condition_2 = (macd_cross_status == MacdCross.GOLDEN_CROSS) and \
-            (ema_abs_sum > EMS_DIFF_THRESHOLD)
+        condition_2 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
-        msg = ("買い注文待ち 現在値：{0: .3f} RSI：{1: .3f} "
-               "RSI閾値：{2} MACD-CROSS：{3} EMS_SUM：{4}")
-        self.myLogger.debug(msg.format(
-            f_last, f_rsi, RSI_THRESHOLD, macd_cross_status, ema_abs_sum))
+        msg = ("買注文待 last:{0: .3f} MACD:{1} EMS_SUM：{2}({3})")
+        self.myLogger.debug(msg.format(f_last, macd_status,
+                                       ema_abs_sum, EMS_DIFF_THRESHOLD))
 
         if condition_1 and condition_2:
             return True
@@ -300,7 +299,7 @@ class AutoOrder:
         f_buy_cancel_price = float(self.get_buy_cancel_price(buy_order_result))
 
         if f_last > f_buy_cancel_price:
-            msg = ("現在値：{0:.3f} 買い注文価格：{1:.3f} 再注文価格：{2:.3f}"
+            msg = ("last:{0:.3f} 買い注文価格:{1:.3f} 再注文価格:{2:.3f}"
                    .format(f_last, f_buy_order_price, f_buy_cancel_price))
             self.myLogger.debug(msg)
             return True
@@ -308,7 +307,9 @@ class AutoOrder:
             return False
 
     def get_buy_cancel_price(self, buy_order_result):
-        """ 買い注文 キャンセル 価格 """
+        """ 買い注文 キャンセル 価格 取得
+        買い注文価格からTHRESHOLD価格が高騰したら再度買い注文をする
+        """
         f_buy_order_price = float(buy_order_result["price"])
         THRESHOLD = 0.5  # 再買い注文するための閾値
         return THRESHOLD + f_buy_order_price
@@ -320,22 +321,18 @@ class AutoOrder:
         while True:
             time.sleep(self.POLLING_SEC_BUY)
 
-            if self.is_buy_order():
+            if self.is_buy_order():  # 買い注文判定
                 break
 
         # 買い注文処理
         buy_order_info = self.get_buy_order_info()
         buy_value = self.bitbank.prvApi.order(
-            buy_order_info["pair"],  # ペア
-            buy_order_info["price"],  # 価格
-            buy_order_info["amount"],  # 注文枚数
-            buy_order_info["orderSide"],  # 注文サイド 売 or 買(buy or sell)
-            # 注文タイプ 指値 or 成行(limit or market))
-            buy_order_info["orderType"]
+            buy_order_info["pair"],         # ペア
+            buy_order_info["price"],        # 価格
+            buy_order_info["amount"],       # 注文枚数
+            buy_order_info["orderSide"],    # 注文サイド 買(buy)
+            buy_order_info["orderType"]     # 注文タイプ 成行(market))
         )
-        msg = "買い注文発生 {0}円 ID：{1}".format(
-            buy_order_info["price"], buy_value["order_id"])
-        self.line.notify_line(msg)
 
         # 買い注文約定待ち
         while True:
@@ -344,28 +341,41 @@ class AutoOrder:
             # 買い注文結果を取得
             buy_order_result = self.bitbank.prvApi.get_order(
                 buy_value["pair"],     # ペア
-                buy_value["order_id"]  # 注文タイプ 指値 or 成行(limit or market))
+                buy_value["order_id"]  # 注文タイプ 成行(market)
             )
+
+            # 買い注文のキャンセル価格取得（表示用）
             buy_cancel_price = self.get_buy_cancel_price(buy_order_result)
 
             # 買い注文の約定判定
             if self.is_fully_filled(buy_order_result, buy_cancel_price):
                 break
 
+            msg = "買い注文約定 {0}円 ID：{1}".format(
+                buy_order_result["price"], buy_order_result["order_id"])
+            self.line.notify_line(msg)
+
             # 買い注文のキャンセル判定
             if self.is_buy_order_cancel(buy_order_result):
-                # 買い注文(成行)
-                buy_cancel_order_result = self.bitbank.prvApi.cancel_order(
+                # 買い注文(成行)キャンセル
+                buy_cancel_result = self.bitbank.prvApi.cancel_order(
                     buy_order_result["pair"],     # ペア
                     buy_order_result["order_id"]  # 注文ID
                 )
 
                 self.line.notify_line(("買い注文キャンセル処理発生！！ ID：{0}")
-                                      .format(buy_value["order_id"]))
+                                      .format(buy_cancel_result["order_id"]))
 
-                buy_cancel_price = self.get_buy_cancel_price(
-                    buy_cancel_order_result)
-                buy_order_result = buy_cancel_order_result
+                # 買い注文（成行）処理
+                buy_order_info = self.get_buy_order_info()
+                buy_value = self.bitbank.prvApi.order(
+                    buy_order_info["pair"],         # ペア
+                    buy_order_info["price"],        # 価格
+                    buy_order_info["amount"],       # 注文枚数
+                    buy_order_info["orderSide"],    # 注文サイド 買(buy)
+                    buy_order_info["orderType"]     # 注文タイプ 成行(market))
+                )
+
                 continue  # 買い注文約定待ちループへ
 
         return buy_order_result  # 買い注文終了(売り注文へ)
@@ -377,8 +387,8 @@ class AutoOrder:
             sell_order_info["pair"],       # ペア
             sell_order_info["price"],      # 価格
             sell_order_info["amount"],     # 注文枚数
-            sell_order_info["orderSide"],  # 注文サイド 売 or 買(buy or sell)
-            sell_order_info["orderType"]   # 注文タイプ 指値 or 成行(limit or market))
+            sell_order_info["orderSide"],  # 注文サイド 売(sell)
+            sell_order_info["orderType"]   # 注文タイプ 指値(limit)
         )
 
         self.line.notify_line(("売り注文発生 {0}円 ID：{1}")
@@ -394,8 +404,9 @@ class AutoOrder:
             )
 
             stop_loss_price = self.get_stop_loss_price(sell_order_status)
-            if self.is_fully_filled(sell_order_status,
-                                    stop_loss_price):  # 売り注文約定判定
+
+            # 売り注文約定　判定
+            if self.is_fully_filled(sell_order_status, stop_loss_price):
                 order_id = sell_order_status["order_id"]
                 f_amount = float(sell_order_status["executed_amount"])
                 f_sell = float(sell_order_status["price"])
@@ -410,8 +421,9 @@ class AutoOrder:
 
                 break
 
+            # 損切する場合
             stop_loss_price = self.get_stop_loss_price(sell_order_status)
-            if self.is_stop_loss(sell_order_status):  # 損切する場合
+            if self.is_stop_loss(sell_order_status):
                 # 約定前の売り注文キャンセル(結果のステータスはチェックしない)
                 cancel_result = self.bitbank.prvApi.cancel_order(
                     sell_order_status["pair"],     # ペア
@@ -420,6 +432,10 @@ class AutoOrder:
 
                 order_id = cancel_result["order_id"]
                 self.myLogger.debug("売りキャンセル注文ID：{0}".format(order_id))
+
+                while(self.is_fully_filled(
+                        cancel_result, stop_loss_price)):
+                    break
 
                 # 売り注文（成行）で損切
                 amount = buy_order_result["start_amount"]
@@ -449,7 +465,7 @@ class AutoOrder:
                 f_benefit = (f_sell - f_buy) * f_amount
 
                 msg = ("デバッグ 売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP"
-                       "ID：{2} f_sell={3} f_buy={4}")
+                       "ID：{2} f_sell={3:.3f} f_buy={4:.3f}")
                 self.myLogger.debug(msg.format(
                     f_benefit, f_amount, order_id, f_sell, f_buy))
 
@@ -464,11 +480,6 @@ class AutoOrder:
 
         return buy_order_result, sell_order_result
 
-    def order_buy_sell(self):
-        """ 注文処理メイン（買い注文 → 売り注文） """
-        buy_order_result = self.buy_order()
-        buy_order_result, _ = self.sell_order(buy_order_result)
-
 
 # main
 if __name__ == '__main__':
@@ -481,9 +492,9 @@ if __name__ == '__main__':
         for i in range(0, ao.LOOP_COUNT_MAIN):
             count = count + 1
             ao.myLogger.info("#############################################")
-            ao.myLogger.info("=== 実験[NO.{0}] ===".format(i))
-            ao.order_buy_sell()
-            time.sleep(ao.POLLING_SEC_MAIN)
+            ao.myLogger.info("=== 処理開始[NO.{0}] ===".format(count))
+            buy_order_result = ao.buy_order()                       # 買い注文処理
+            buy_order_result, _ = ao.sell_order(buy_order_result)   # 売り注文処理
 
             activeOrders = bitbank.get_active_orders()["orders"]
             if not activeOrders:
@@ -491,13 +502,12 @@ if __name__ == '__main__':
                     len(activeOrders)), "1", "422")
                 ao.myLogger.debug("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)))
+
                 for j in range(activeOrders):
                     ao.myLogger.debug(
                         "現在のオーダー一覧 :{0}".format(activeOrders[j]))
 
                 break  # Mainループブレイク
-
-        bitbank.get_balances()
 
     except KeyboardInterrupt as ki:
         line.notify_line_stamp("自動売買が中断されました 詳細：{0}".format(ki), "1", "3")
