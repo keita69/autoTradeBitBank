@@ -1,226 +1,14 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 import time
-import logging
-from logging import getLogger, StreamHandler, DEBUG
-from logging.handlers import TimedRotatingFileHandler
-from datetime import datetime, timezone, timedelta
-from enum import Enum
 
-import requests
 import pandas as pd
 import python_bitbankcc
-from sklearn import linear_model
 
-
-class MyUtil:
-    """ 処理に依存しない自分専用のユーティリティクラス """
-
-    def get_timestamp(self):
-        """ JSTのタイムスタンプを取得する """
-        JST = timezone(timedelta(hours=+9), 'JST')
-        return datetime.now(JST).strftime('%Y/%m/%d %H:%M:%S')
-
-
-class EmaCross(Enum):
-    """ EMSのクロス状態を定義 """
-    GOLDEN_CROSS = 1
-    DEAD_CROSS = 0
-    OTHER_CROSS = -1
-
-
-class MacdCross(Enum):
-    """ MACDのクロス状態を定義 """
-    GOLDEN_CROSS = 1
-    DEAD_CROSS = 0
-    OTHER_CROSS = -1
-
-
-class MyTechnicalAnalysisUtil:
-    """ テクニカル分析のユーティリティクラス
-    https://www.rakuten-sec.co.jp/MarketSpeed/onLineHelp/msman2_5_1_2.html
-
-    PRAM:
-        n: 対象データ数(5とか14くらいが良いとされる)
-        cadle_type: "1min","5min","15min","30min","1hour"のいづれか。
-    """
-
-    def __init__(self):
-        """ コンストラクタ """
-        self.pubApi = python_bitbankcc.public()
-        self.myLogger = MyLogger()
-        self.RSI_N = 14
-
-    def get_candlestick(self, candle_type):
-        """ 最新のチャート情報（ロウソク）をN個以上取得する。
-        ・サンプル
-                   open   hight     low   close      amount           time
-            221  65.372  65.401  65.351  65.400  39242.7256  1527738060000
-            222  65.401  65.420  65.334  65.368  35837.8861  1527738120000
-            223  65.368  65.368  65.208  65.272  70144.5507  1527738180000
-        """
-        now = time.time()
-        now_utc = datetime.utcfromtimestamp(now)
-
-        yyyymmdd = now_utc.strftime('%Y%m%d')
-        # self.myLogger.debug(
-        #    "yyyymmdd={0} candle_type={1}".format(yyyymmdd, candle_type))
-        candlestick = self.pubApi.get_candlestick(
-            "xrp_jpy", candle_type, yyyymmdd)
-
-        ohlcv = candlestick["candlestick"][0]["ohlcv"]
-        df_ohlcv = pd.DataFrame(ohlcv,
-                                columns=["open",    # 始値
-                                         "hight",   # 高値
-                                         "low",     # 安値
-                                         "close",   # 終値
-                                         "amount",  # 出来高
-                                         "time"])   # UnixTime
-
-        yesterday = now_utc - timedelta(days=1)
-        str_yesterday = yesterday.strftime('%Y%m%d')
-        yday_candlestick = self.pubApi.get_candlestick(
-            "xrp_jpy", candle_type, str_yesterday)
-        yday_ohlcv = yday_candlestick["candlestick"][0]["ohlcv"]
-        df_yday_ohlcv = pd.DataFrame(yday_ohlcv,
-                                     columns=["open",      # 始値
-                                              "hight",     # 高値
-                                              "low",       # 安値
-                                              "close",     # 終値
-                                              "amount",    # 出来高
-                                              "time"])     # UnixTime
-        df_yday_ohlcv.append(df_ohlcv, ignore_index=True)  # 前日分追加
-
-        # self.myLogger.debug("ohlcv:\n{0}".format(df_ohlcv))
-        return df_ohlcv
-
-    def get_ema(self, candle_type, n_short, n_long):
-        """ EMA(指数平滑移動平均)を返却する
-        計算式：EMA ＝ 1分前のEMA+α(現在の終値－1分前のEMA)
-            *移動平均の期間をn
-            *α=2÷(n+1)
-        参考
-        http://www.algo-fx-blog.com/ema-how-to-do-with-python-pandas/
-        """
-
-        df_ema = self.get_candlestick(candle_type)
-        df_ema['ema_long'] = df_ema['close'].ewm(span=int(n_long)).mean()
-        df_ema['ema_short'] = df_ema['close'].ewm(span=int(n_short)).mean()
-
-        # self.myLogger.debug("ema:\n{0}".format(df_ema))
-
-        return df_ema
-
-    def get_macd_cross_status(self, candle_type):
-        """
-        ・シグナルをMACDが下から上へ抜けた時＝上昇トレンド(＝買いシグナル)
-        ・シグナルをMACDが上から下へ抜けた時＝下降トレンド(＝売りシグナル)
-        """
-        macd = self.get_macd(candle_type)
-        mhd = macd.tail(2)
-        mhd["diff"] = mhd["macd"] - mhd["signal"]
-
-        # self.myLogger.debug(
-        #    "\n======== macd_head =======\n\n {0}".format(mhd))
-        condition_1 = (mhd["diff"].values[0] <= 0) and (
-            mhd["diff"].values[1] > 0)  # 買いシグナル
-        condition_2 = (mhd["diff"].values[0] >= 0) and (
-            mhd["diff"].values[1] < 0)  # 売りシグナル
-
-        status = MacdCross.OTHER_CROSS
-        if condition_1:
-            # golden cross
-            status = MacdCross.GOLDEN_CROSS
-        elif condition_2:
-            # dead cross
-            status = MacdCross.DEAD_CROSS
-
-        # self.myLogger.debug("MACD Status:{0}".format(status))
-        return status
-
-    def get_macd(self, candle_type):
-        """ MACD:MACDはEMA（指数平滑移動平均）の長期と短期の値を用いており、主にトレンドの方向性や転換期を見極める指標
-        計算式
-            MACD = 短期EMA（12） – 長期EMA（26）
-            シグナル = MACDの指数平滑移動平均（9）
-        参考
-        http://www.algo-fx-blog.com/macd-python-technical-indicators/
-        """
-        n_short = 12
-        n_long = 26
-        n_signal = 9
-        df_ema = self.get_ema(candle_type, n_short, n_long)
-        df_ema["macd"] = df_ema["ema_short"] - df_ema["ema_long"]
-        df_ema["signal"] = df_ema["macd"].ewm(span=n_signal).mean()
-        # self.myLogger.debug(
-        #    "\n======== df_ema =======\n\n {0}".format(df_ema))
-
-        return df_ema
-
-    def get_rsi(self, n: int, candle_type):
-        """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
-        計算式：RSI＝直近N日間の上げ幅合計の絶対値/（直近N日間の上げ幅合計の絶対値＋下げ幅合計の絶対値）×100
-        参考
-        http://www.algo-fx-blog.com/rsi-python-ml-features/
-        """
-        df_ohlcv = self.get_candlestick(candle_type)
-        df_close = df_ohlcv["close"].astype('float')
-        df_diff = df_close.diff()
-
-        # 値上がり幅、値下がり幅をシリーズへ切り分け
-        up, down = df_diff.copy(), df_diff.copy()
-        up[up < 0] = 0
-        down[down > 0] = 0
-
-        up_sma_n = up.rolling(window=n, center=False).mean()  # mean:平均を計算
-        down_sma_n = down.abs().rolling(window=n, center=False).mean()
-
-        df_rs = up_sma_n / down_sma_n
-        df_rsi = 100.0 - (100.0 / (1.0 + df_rs))
-
-        return df_rsi[-1:].values.tolist()[0]  # 最新のRSIを返却（最終行）
-
-
-class MyLogger:
-    """ ログの出力表現を集中的に管理する自分専用クラス """
-
-    def __init__(self):
-        """ コンストラクタ """
-        # 参考：http://joemphilips.com/post/python_logging/
-        self.logger = getLogger(__name__)
-        self.logger.setLevel(DEBUG)
-        formatter = logging.Formatter(
-            "%(asctime)s %(name) %(levelname)s %(message)s")
-        sh = StreamHandler()
-        sh.setLevel(DEBUG)
-        sh.setFormatter(formatter)
-        self.logger.addHandler(sh)
-
-        rfh = TimedRotatingFileHandler(
-            './log.txt', when="d", interval=1, backupCount=20)
-        rfh.setLevel(DEBUG)
-        rfh.setFormatter(formatter)
-        self.logger.addHandler(rfh)
-
-    def debug(self, msg):
-        """ DEBUG	10	動作確認などデバッグの記録 """
-        self.logger.debug(msg)
-
-    def info(self, msg):
-        """ INFO	20	正常動作の記録 """
-        self.logger.info(msg)
-
-    def warning(self, msg):
-        """ WARNING	30	ログの定義名 """
-        self.logger.warning(msg)
-
-    def error(self, msg):
-        """ ERROR	40	エラーなど重大な問題 """
-        self.logger.error(msg)
-
-    def critical(self, msg):
-        """ CRITICAL	50	停止など致命的な問題 """
-        self.logger.critical(msg)
+from myUtil import MyLogger, MyUtil, Line
+from technicalAnalysis import MacdCross, MyTechnicalAnalysisUtil
 
 
 class AutoOrder:
@@ -262,12 +50,12 @@ class AutoOrder:
         self.myLogger = MyLogger()
         self.api_key = os.getenv("BITBANK_API_KEY")
         self.api_secret = os.getenv("BITBANK_API_SECRET")
-        self.line_notify_token = os.getenv("LINE_NOTIFY_TOKEN")
 
         self.check_env()
 
         self.mu = MyUtil()
         self.mtau = MyTechnicalAnalysisUtil()
+        self.line = Line()
 
         self.pubApi = python_bitbankcc.public()
         self.prvApi = python_bitbankcc.private(self.api_key, self.api_secret)
@@ -278,13 +66,6 @@ class AutoOrder:
             emsg = '''
             Please set BITBANK_API_KEY or BITBANK_API_SECRET in Environment !!
             ex) exoprt BITBANK_API_KEY=XXXXXXXXXXXXXXXXXX
-            '''
-            raise EnvironmentError(emsg)
-
-        if self.api_key is None:
-            emsg = '''
-            Please set LINE_NOTIFY_TOKEN in OS environment !!
-            ex) exoprt LINE_NOTIFY_TOKEN=XXXXXXXXXXXXXXXXXX"
             '''
             raise EnvironmentError(emsg)
 
@@ -547,10 +328,9 @@ class AutoOrder:
             # 注文タイプ 指値 or 成行(limit or market))
             buy_order_info["orderType"]
         )
-
-        self.notify_line(("買い注文発生 {0}円 ID：{1}")
-                         .format(buy_order_info["price"],
-                                 buy_value["order_id"]))
+        msg = "買い注文発生 {0}円 ID：{1}".format(
+            buy_order_info["price"], buy_value["order_id"])
+        self.line.notify_line(msg)
 
         # 買い注文約定待ち
         while True:
@@ -575,8 +355,8 @@ class AutoOrder:
                     buy_order_result["order_id"]  # 注文ID
                 )
 
-                self.notify_line(("買い注文キャンセル処理発生！！ ID：{0}")
-                                 .format(buy_value["order_id"]))
+                self.line.notify_line(("買い注文キャンセル処理発生！！ ID：{0}")
+                                      .format(buy_value["order_id"]))
 
                 buy_cancel_price = self.get_buy_cancel_price(
                     buy_cancel_order_result)
@@ -596,9 +376,9 @@ class AutoOrder:
             sell_order_info["orderType"]   # 注文タイプ 指値 or 成行(limit or market))
         )
 
-        self.notify_line(("売り注文発生 {0}円 ID：{1}")
-                         .format(sell_order_info["price"],
-                                 sell_order_result["order_id"]))
+        self.line.notify_line(("売り注文発生 {0}円 ID：{1}")
+                              .format(sell_order_info["price"],
+                                      sell_order_result["order_id"]))
 
         while True:
             time.sleep(self.POLLING_SEC_SELL)
@@ -618,7 +398,7 @@ class AutoOrder:
                 f_benefit = (f_sell - f_buy) * f_amount
 
                 line_msg = "売り注文約定 利益：{0:.3f}円 x {1:.0f}XRP ID：{2}"
-                self.notify_line_stamp(line_msg.format(
+                self.line.notify_line_stamp(line_msg.format(
                     f_benefit, f_amount, order_id), "1", "10")
                 self.myLogger.debug(line_msg.format(
                     f_benefit, f_amount, order_id))
@@ -669,7 +449,7 @@ class AutoOrder:
                     f_benefit, f_amount, order_id, f_sell, f_buy))
 
                 line_msg = "売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{2}"
-                self.notify_line_stamp(line_msg.format(
+                self.line.notify_line_stamp(line_msg.format(
                     f_benefit, f_amount, order_id), "1", "104")
                 self.myLogger.debug(line_msg.format(
                     f_benefit, f_amount, order_id))
@@ -684,36 +464,11 @@ class AutoOrder:
         buy_order_result = self.buy_order()
         buy_order_result, _ = self.sell_order(buy_order_result)
 
-    def notify_line(self, message):
-        """ LINE通知（messageのみ） """
-        return self.notify_line_stamp(message, "", "")
-
-    def notify_line_stamp(self, message, stickerPackageId, stickerId):
-        """ LINE通知（スタンプ付き）
-        LINEスタンプの種類は下記URL参照
-        https://devdocs.line.me/files/sticker_list.pdf
-        """
-        line_notify_api = 'https://notify-api.line.me/api/notify'
-
-        total_assets = self.get_total_assets()
-        message = "{0}  {1} 総資産：{2}円".format(
-            self.mu.get_timestamp(), message, total_assets)
-
-        if (stickerPackageId == "") or (stickerId == ""):
-            payload = {'message': message}
-        else:
-            payload = {'message': message,
-                       'stickerPackageId': stickerPackageId,
-                       'stickerId': stickerId}
-
-        headers = {'Authorization': 'Bearer ' +
-                   self.line_notify_token}  # 発行したトークン
-        return requests.post(line_notify_api, data=payload, headers=headers)
-
 
 # main
 if __name__ == '__main__':
     ao = AutoOrder()
+    line = Line()
     count = 0
 
     try:
@@ -726,7 +481,7 @@ if __name__ == '__main__':
 
             activeOrders = ao.get_active_orders()["orders"]
             if not activeOrders:
-                ao.notify_line_stamp("売買数が合いません！！！ 注文数：{0}".format(
+                line.notify_line_stamp("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)), "1", "422")
                 ao.myLogger.debug("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)))
@@ -739,10 +494,10 @@ if __name__ == '__main__':
         ao.get_balances()
 
     except KeyboardInterrupt as ki:
-        ao.notify_line_stamp("自動売買が中断されました 詳細：{0}".format(ki), "1", "3")
+        line.notify_line_stamp("自動売買が中断されました 詳細：{0}".format(ki), "1", "3")
     except BaseException as be:
-        ao.notify_line_stamp("システムエラーが発生しました！ 詳細：{0}".format(be), "1", "17")
+        line.notify_line_stamp("システムエラーが発生しました！ 詳細：{0}".format(be), "1", "17")
         raise BaseException
     finally:
-        ao.notify_line_stamp("自動売買が終了！処理回数：{0}回".format(count), "2", "516")
+        line.notify_line_stamp("自動売買が終了！処理回数：{0}回".format(count), "2", "516")
         sys.exit()

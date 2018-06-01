@@ -1,48 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from bitbankAutoOrder import MyTechnicalAnalysisUtil
 from bitbankAutoOrder import AutoOrder
-from bitbankAutoOrder import EmaCross, MacdCross
-
-
-def test_get_macd_cross_status():
-    mtau = MyTechnicalAnalysisUtil()
-    macd_cross_status = mtau.get_macd_cross_status("1min")
-
-    condition_1 = (macd_cross_status == MacdCross.GOLDEN_CROSS)
-    condition_2 = (macd_cross_status == MacdCross.DEAD_CROSS)
-    condition_3 = (macd_cross_status == MacdCross.OTHER_CROSS)
-
-    assert (condition_1 or condition_2 or condition_3)
-
-
-def test_get_macd():
-    mtau = MyTechnicalAnalysisUtil()
-    df_macd = mtau.get_macd("1min")
-    assert df_macd.values is not None
-
-
-def test_is_stop_loss():
-    """ テスト実行時の現在価格、EMS、RSIによって結果がことなる """
-    sell_order_result = {
-        "success": 1,
-        "data": {
-            "order_id": 41765227,
-            "pair": "xrp_jpy",
-            "side": "sell",
-            "type": "limit",
-            "start_amount": "1.000000",
-            "remaining_amount": "0.000000",
-            "executed_amount": "1.000000",
-            "price": "67.4130",
-            "average_price": "67.4130",
-            "ordered_at": 1527257113483,
-            "executed_at": 1527257770061,
-            "status": "FULLY_FILLED"
-        }
-    }["data"]
-    ao = AutoOrder()
-    ao.is_stop_loss(sell_order_result)
 
 
 def test_patch_get_xrp_jpy_value(monkeypatch):
@@ -57,30 +15,6 @@ def test_patch_get_xrp_jpy_value(monkeypatch):
     sut = AutoOrder()
     last, sell, buy = sut.get_xrp_jpy_value()
     assert (last, sell, buy) == (50.1, 53.1, 49.2)
-
-
-def test_notify_line():
-    ao = AutoOrder()
-    http_status = ao.notify_line("LINEメッセージテスト")
-    assert http_status.status_code == 200
-
-    http_status = ao.notify_line_stamp("LINEスタンプテスト", "2", "179")
-    assert http_status.status_code == 200
-
-
-def test_get_rsi():
-    mtau = MyTechnicalAnalysisUtil()
-    rsi = mtau.get_rsi(mtau.RSI_N, "1min")
-    assert rsi >= 0
-    assert rsi <= 100
-
-
-def test_get_ema():
-    n_short = 9
-    n_long = 26
-    mtau = MyTechnicalAnalysisUtil()
-    ema = mtau.get_ema("1min", n_short, n_long)
-    assert ema is not None
 
 
 def test_get_xrp_jpy_value():
