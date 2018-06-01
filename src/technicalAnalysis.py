@@ -102,8 +102,9 @@ class MyTechnicalAnalysisUtil:
         ・シグナルをMACDが上から下へ抜けた時＝下降トレンド(＝売りシグナル)
         """
         macd = self.get_macd(candle_type)
-        mhd = macd.tail(2)
-        mhd["diff"] = mhd["macd"] - mhd["signal"]
+        mhd_org = macd.tail(2)
+        mhd = mhd_org.copy()
+        mhd["diff"] = mhd_org["macd"] - mhd_org["signal"]
 
         # self.myLogger.debug(
         #    "\n======== macd_head =======\n\n {0}".format(mhd))

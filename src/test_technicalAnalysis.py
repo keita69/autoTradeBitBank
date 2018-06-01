@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from technicalAnalysis import MacdCross, MyTechnicalAnalysisUtil
-from bitbankAutoOrder import AutoOrder
+from bitbankAutoOrder import Bitbank
 
 
 def test_get_macd_cross_status():
@@ -28,9 +28,9 @@ def test_patch_get_xrp_jpy_value(monkeypatch):
     last = 50.1
     sell = 53.1
     buy = 49.2
-    monkeypatch.setattr(AutoOrder, 'get_xrp_jpy_value',
+    monkeypatch.setattr(Bitbank, 'get_xrp_jpy_value',
                         lambda x: (last, sell, buy))
-    sut = AutoOrder()
+    sut = Bitbank()
     last, sell, buy = sut.get_xrp_jpy_value()
     assert (last, sell, buy) == (50.1, 53.1, 49.2)
 
