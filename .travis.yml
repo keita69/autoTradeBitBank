@@ -19,7 +19,7 @@ install:
   - pip install scipy
 
 script:
-  - pep8 src/bitbankAutoOrder.py
+  - pep8 src/*.py
 #  - pytest src/test_bitbankAutoOrder.py
 #  - coverage run src/test_bitbankAutoOrder.py
   - pytest --cov=./src
