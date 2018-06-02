@@ -114,7 +114,7 @@ class AutoOrder:
 
     def get_order_price(self, order):
         """ 価格または平均価格から価格を取得する """
-        print(order.get("hoge"))
+        self.myLogger.debug("注文の価格を取得する {0}".format(order))
         if (order.get("price") is not None):
             p = order["price"]
         elif (order.get("average_price") is not None):
@@ -286,7 +286,7 @@ class AutoOrder:
         # 条件2
         n_short = 9
         n_long = 26
-        EMS_DIFF_THRESHOLD = 0.3
+        EMS_DIFF_THRESHOLD = 0.1
         df_ema = self.mtau.get_ema("1min", n_short, n_long)
         df_ema_diff = pd.DataFrame(
             df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
@@ -294,9 +294,11 @@ class AutoOrder:
         ema_abs_sum = df_ema_diff_short.abs().sum(axis=0).values[0]
         condition_2 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
-        msg = ("買注文待 last:{0: .3f} MACD:{1} EMS_SUM：{2}({3})")
+        msg = (
+            "買注文待 last:{0:.3f} MACD:{1} EMS_SUM：{2:.3f}({3:.3f}) C[{4}][{5}]")
         self.myLogger.debug(msg.format(f_last, macd_status,
-                                       ema_abs_sum, EMS_DIFF_THRESHOLD))
+                                       ema_abs_sum, EMS_DIFF_THRESHOLD,
+                                       condition_1, condition_2))
 
         if condition_1 and condition_2:
             return True
@@ -366,10 +368,13 @@ class AutoOrder:
                 msg = "買い注文約定 {0}円 ID：{1}".format(
                     price, buy_order_result["order_id"])
                 self.line.notify_line(msg)
-                break  # 買い注文約定待ちループ ブレイク
+                break
 
             # 買い注文のキャンセル判定
             if self.is_buy_order_cancel(buy_order_result):
+                self.myLogger.debug(
+                    "買い注文キャンセル 情報 {0}".format(buy_order_result))
+
                 # 買い注文(成行)キャンセル
                 buy_cancel_result = self.bitbank.prvApi.cancel_order(
                     buy_order_result["pair"],     # ペア
