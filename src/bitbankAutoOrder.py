@@ -362,11 +362,11 @@ class AutoOrder:
 
             # 買い注文の約定判定
             if self.is_fully_filled(buy_order_result, buy_cancel_price):
-                break
-            price = self.get_order_price(buy_order_result)
-            msg = "買い注文約定 {0}円 ID：{1}".format(
-                price, buy_order_result["order_id"])
-            self.line.notify_line(msg)
+                price = self.get_order_price(buy_order_result)
+                msg = "買い注文約定 {0}円 ID：{1}".format(
+                    price, buy_order_result["order_id"])
+                self.line.notify_line(msg)
+                break  # 買い注文約定待ちループ ブレイク
 
             # 買い注文のキャンセル判定
             if self.is_buy_order_cancel(buy_order_result):
