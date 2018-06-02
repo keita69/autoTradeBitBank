@@ -99,6 +99,7 @@ class AutoOrder:
         self.AMOUNT = "1"
 
         self.BUY_ORDER_RANGE = 0.0
+        self.BUY_CANCEL_THRESHOLD = 0.5  # 再買い注文するための閾値
         self.SELL_ORDER_RANGE = 0.1
         self.POLLING_SEC_MAIN = 15
         self.POLLING_SEC_BUY = 0.1
@@ -111,6 +112,19 @@ class AutoOrder:
         self.line = Line()
         self.bitbank = Bitbank()
 
+    def get_order_price(self, order):
+        """ 価格または平均価格から価格を取得する """
+        print(order.get("hoge"))
+        if (order.get("price") is not None):
+            p = order["price"]
+        elif (order.get("average_price") is not None):
+            p = order["average_price"]
+        else:
+            raise AttributeError
+
+        f_price = float(p)
+        return f_price
+
     def is_fully_filled(self, orderResult, threshold_price):
         """ 注文の約定を判定 """
         last, _, _ = self.bitbank.get_xrp_jpy_value()
@@ -119,7 +133,7 @@ class AutoOrder:
         order_id = orderResult["order_id"]
         pair = orderResult["pair"]
         status = orderResult["status"]
-        f_price = float(orderResult["price"])
+        f_price = self.get_order_price(orderResult)
         # f_start_amount = float(orderResult["remaining_amount"])    # 注文時の数量
         f_remaining_amount = float(orderResult["remaining_amount"])  # 未約定の数量
         f_executed_amount = float(orderResult["executed_amount"])    # 約定済み数量
@@ -205,7 +219,7 @@ class AutoOrder:
         return sell_order_info
 
     def is_stop_loss(self, sell_order_result):
-        """ 売り注文(損切注文)の判定
+        """ 売り注文(損切注文)の判定 下記、条件の場合は損切をする（True）
                 条件(condition)：
             1. 含み損が損切価格より大きい　または
             2. RSIが閾値(RSI_THRESHOLD)より大きい　かつ　含み損が損切価格の(n*100)％より大きい　または
@@ -243,14 +257,14 @@ class AutoOrder:
 
     def get_stop_loss_price(self, sell_order_result):
         """ 損切価格の取得 """
-        f_sell_order_price = float(sell_order_result["price"])  # 売り指定価格
+        f_sell_order_price = self.get_order_price(sell_order_result)  # 売り指定価格
 
         THRESHOLD = 10  # 閾値
         return f_sell_order_price - (self.SELL_ORDER_RANGE * THRESHOLD)
 
     def get_stop_loss_price_n(self, sell_order_result, n):
         """ 損切価格(閾値にnをかける)の取得 """
-        f_sell_order_price = float(sell_order_result["price"])  # 売り指定価格
+        f_sell_order_price = self.get_order_price(sell_order_result)  # 売り指定価格
 
         THRESHOLD = 10 * n  # 閾値
         return f_sell_order_price - (self.SELL_ORDER_RANGE * THRESHOLD)
@@ -294,7 +308,7 @@ class AutoOrder:
         last, _, _ = self.bitbank.get_xrp_jpy_value()
         f_last = float(last)  # 現在値
 
-        f_buy_order_price = float(buy_order_result["price"])
+        f_buy_order_price = self.get_order_price(buy_order_result)
         f_last = float(last)
         f_buy_cancel_price = float(self.get_buy_cancel_price(buy_order_result))
 
@@ -310,9 +324,8 @@ class AutoOrder:
         """ 買い注文 キャンセル 価格 取得
         買い注文価格からTHRESHOLD価格が高騰したら再度買い注文をする
         """
-        f_buy_order_price = float(buy_order_result["price"])
-        THRESHOLD = 0.5  # 再買い注文するための閾値
-        return THRESHOLD + f_buy_order_price
+        f_buy_order_price = self.get_order_price(buy_order_result)
+        return self.BUY_CANCEL_THRESHOLD + f_buy_order_price
 
     def buy_order(self):
         """ 買い注文処理 """
@@ -350,9 +363,9 @@ class AutoOrder:
             # 買い注文の約定判定
             if self.is_fully_filled(buy_order_result, buy_cancel_price):
                 break
-
+            price = self.get_order_price(buy_order_result)
             msg = "買い注文約定 {0}円 ID：{1}".format(
-                buy_order_result["price"], buy_order_result["order_id"])
+                price, buy_order_result["order_id"])
             self.line.notify_line(msg)
 
             # 買い注文のキャンセル判定
@@ -409,8 +422,8 @@ class AutoOrder:
             if self.is_fully_filled(sell_order_status, stop_loss_price):
                 order_id = sell_order_status["order_id"]
                 f_amount = float(sell_order_status["executed_amount"])
-                f_sell = float(sell_order_status["price"])
-                f_buy = float(buy_order_result["price"])
+                f_sell = self.get_order_price(sell_order_status)
+                f_buy = self.get_order_price(buy_order_result)
                 f_benefit = (f_sell - f_buy) * f_amount
 
                 line_msg = "売り注文約定 利益：{0:.3f}円 x {1:.0f}XRP ID：{2}"
@@ -460,8 +473,8 @@ class AutoOrder:
 
                 order_id = sell_market_result["order_id"]
                 f_amount = float(sell_market_result["start_amount"])
-                f_sell = float(sell_market_result["price"])
-                f_buy = float(buy_order_result["price"])
+                f_sell = self.get_order_price(sell_market_result)
+                f_buy = self.get_order_price(buy_order_result)
                 f_benefit = (f_sell - f_buy) * f_amount
 
                 msg = ("デバッグ 売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP"
@@ -516,4 +529,3 @@ if __name__ == '__main__':
         raise BaseException
     finally:
         line.notify_line_stamp("自動売買が終了！処理回数：{0}回".format(count), "2", "516")
-        sys.exit()
