@@ -244,7 +244,7 @@ class AutoOrder:
 
         # 条件3
         status = self.mtau.get_macd_cross_status("1min")
-        dead_cross = (status == MacdCross.DEAD_CROSS)
+        dead_cross = (status == MacdCross.DEAD)
         condition_3 = dead_cross
 
         if condition_1 or condition_2 or condition_3:
@@ -281,7 +281,7 @@ class AutoOrder:
 
         # 条件1
         macd_status = self.mtau.get_macd_cross_status("1min")
-        condition_1 = (macd_status == MacdCross.GOLDEN_CROSS)
+        condition_1 = (macd_status == MacdCross.GOLDEN)
 
         # 条件2
         n_short = 9
@@ -295,7 +295,7 @@ class AutoOrder:
         condition_2 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
         msg = (
-            "買注文待 last:{0:.3f} MACD:{1} EMS_SUM：{2:.3f}({3:.3f}) C[{4}][{5}]")
+            "買注文待 last:{0:.3f} {1} EMS_SUM：{2:.3f}({3:.3f}) C[{4}][{5}]")
         self.myLogger.debug(msg.format(f_last, macd_status,
                                        ema_abs_sum, EMS_DIFF_THRESHOLD,
                                        condition_1, condition_2))

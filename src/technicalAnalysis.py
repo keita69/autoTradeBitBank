@@ -9,16 +9,16 @@ from myUtil import MyLogger
 
 class EmaCross(Enum):
     """ EMSのクロス状態を定義 """
-    GOLDEN_CROSS = 1
-    DEAD_CROSS = 0
-    OTHER_CROSS = -1
+    GOLDEN = 1
+    DEAD = 0
+    OTHER = -1
 
 
 class MacdCross(Enum):
     """ MACDのクロス状態を定義 """
-    GOLDEN_CROSS = 1
-    DEAD_CROSS = 0
-    OTHER_CROSS = -1
+    GOLDEN = 1
+    DEAD = 0
+    OTHER = -1
 
 
 class MyTechnicalAnalysisUtil:
@@ -113,13 +113,13 @@ class MyTechnicalAnalysisUtil:
         condition_2 = (mhd["diff"].values[0] >= 0) and (
             mhd["diff"].values[1] < 0)  # 売りシグナル
 
-        status = MacdCross.OTHER_CROSS
+        status = MacdCross.OTHER
         if condition_1:
             # golden cross
-            status = MacdCross.GOLDEN_CROSS
+            status = MacdCross.GOLDEN
         elif condition_2:
             # dead cross
-            status = MacdCross.DEAD_CROSS
+            status = MacdCross.DEAD
 
         # self.myLogger.debug("MACD Status:{0}".format(status))
         return status
