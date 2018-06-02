@@ -359,42 +359,13 @@ class AutoOrder:
                 buy_value["order_id"]  # 注文タイプ 成行(market)
             )
 
-            # 買い注文のキャンセル価格取得（表示用）
-            buy_cancel_price = self.get_buy_cancel_price(buy_order_result)
-
             # 買い注文の約定判定
-            if self.is_fully_filled(buy_order_result, buy_cancel_price):
+            if self.is_fully_filled(buy_order_result, 0.0):
                 price = self.get_order_price(buy_order_result)
                 msg = "買い注文約定 {0}円 ID：{1}".format(
                     price, buy_order_result["order_id"])
                 self.line.notify_line(msg)
                 break
-
-        # 買い注文のキャンセル判定
-        if self.is_buy_order_cancel(buy_order_result):
-            self.myLogger.debug(
-                "買い注文キャンセル 情報 {0}".format(buy_order_result))
-
-            # 買い注文(成行)キャンセル
-            buy_cancel_result = self.bitbank.prvApi.cancel_order(
-                buy_order_result["pair"],     # ペア
-                buy_order_result["order_id"]  # 注文ID
-            )
-
-            self.line.notify_line(("買い注文キャンセル処理発生！！ ID：{0}")
-                                  .format(buy_cancel_result["order_id"]))
-
-            # 買い注文（成行）処理
-            buy_order_info = self.get_buy_order_info()
-            buy_value = self.bitbank.prvApi.order(
-                buy_order_info["pair"],         # ペア
-                buy_order_info["price"],        # 価格
-                buy_order_info["amount"],       # 注文枚数
-                buy_order_info["orderSide"],    # 注文サイド 買(buy)
-                buy_order_info["orderType"]     # 注文タイプ 成行(market))
-            )
-
-            continue  # 買い注文約定待ちループへ
 
         return buy_order_result  # 買い注文終了(売り注文へ)
 
