@@ -486,7 +486,7 @@ if __name__ == '__main__':
             buy_order_result, _ = ao.sell_order(buy_order_result)   # 売り注文処理
 
             activeOrders = bitbank.get_active_orders()["orders"]
-            if not activeOrders:
+            if len(activeOrders) != 0:
                 line.notify_line_stamp("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)), "1", "422")
                 ao.myLogger.debug("売買数が合いません！！！ 注文数：{0}".format(
