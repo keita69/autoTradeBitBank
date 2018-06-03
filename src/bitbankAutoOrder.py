@@ -428,7 +428,7 @@ class AutoOrder:
 
                 # 売り注文（成行）で損切
                 amount = buy_order_result["start_amount"]
-                price = buy_order_result["price"]  # 成行なので指定しても意味なし？
+                price = self.get_order_price(buy_order_result)
                 sell_order_info_by_market = self.get_sell_order_info_by_barket(
                     amount, price)
 
