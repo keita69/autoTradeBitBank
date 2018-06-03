@@ -441,7 +441,7 @@ class AutoOrder:
                 )
 
                 while(self.is_fully_filled(
-                        sell_market_result, stop_loss_price)):
+                        sell_market_result, 0.0)):
                     break
 
                 order_id = sell_market_result["order_id"]
@@ -464,6 +464,10 @@ class AutoOrder:
                 self.myLogger.debug(line_msg.format(
                     f_benefit, f_amount, order_id))
 
+                while(self.is_fully_filled(
+                        sell_market_result, stop_loss_price)):
+                    break
+
                 sell_order_result = sell_market_result
                 break
 
@@ -480,8 +484,11 @@ if __name__ == '__main__':
     try:
         for i in range(0, ao.LOOP_COUNT_MAIN):
             count = count + 1
+            total_assets = bitbank.get_total_assets()
             ao.myLogger.info("#############################################")
-            ao.myLogger.info("=== 処理開始[NO.{0}] ===".format(count))
+            msg = "=== 処理開始[NO.{0}] 総資産:{1}円===".format(count, total_assets)
+            ao.myLogger.info(msg)
+            line.notify_line(msg)
             buy_order_result = ao.buy_order()                       # 買い注文処理
             buy_order_result, _ = ao.sell_order(buy_order_result)   # 売り注文処理
 
