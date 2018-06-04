@@ -33,7 +33,7 @@ class MyTechnicalAnalysisUtil:
     def __init__(self):
         """ コンストラクタ """
         self.pubApi = python_bitbankcc.public()
-        self.myLogger = MyLogger()
+        self.myLogger = MyLogger(__name__)
         self.RSI_N = 14
 
     def get_candlestick(self, candle_type):

@@ -18,7 +18,7 @@ class Bitbank:
         self.check_env()
         self.pubApi = python_bitbankcc.public()
         self.prvApi = python_bitbankcc.private(self.api_key, self.api_secret)
-        self.myLogger = MyLogger()
+        self.myLogger = MyLogger(__name__)
 
     def check_env(self):
         """ 環境変数のチェック """
@@ -104,7 +104,7 @@ class AutoOrder:
         self.POLLING_SEC_BUY = 0.1
         self.POLLING_SEC_SELL = 0.1
 
-        self.myLogger = MyLogger()
+        self.myLogger = MyLogger(__name__)
 
         self.mu = MyUtil()
         self.mtau = MyTechnicalAnalysisUtil()

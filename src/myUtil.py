@@ -19,10 +19,10 @@ class MyUtil:
 class MyLogger:
     """ ログの出力表現を集中的に管理する自分専用クラス """
 
-    def __init__(self):
+    def __init__(self, name):
         """ コンストラクタ """
         # 参考：http://joemphilips.com/post/python_logging/
-        self.logger = getLogger(__name__)
+        self.logger = getLogger(name)
         self.logger.setLevel(DEBUG)
         formatter = logging.Formatter(
             "%(asctime)s %(name) %(levelname)s %(message)s")

@@ -13,7 +13,7 @@ def test_notify_line():
 
 
 def test_logger():
-    ml = MyLogger()
+    ml = MyLogger(__name__)
     ml.critical("CRITICAL")
     ml.error("ERROR")
     ml.warning("WARNING")
