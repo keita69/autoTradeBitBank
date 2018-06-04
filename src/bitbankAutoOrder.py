@@ -499,9 +499,9 @@ if __name__ == '__main__':
                 ao.myLogger.debug("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)))
 
-                for j in range(activeOrders):
+                for j, act_order in in enumerate(activeOrders):
                     ao.myLogger.debug(
-                        "現在のオーダー一覧 :{0}".format(activeOrders[j]))
+                        "現在のオーダー一覧 :{0}:{1}".format(j, act_order))
 
                 break  # Mainループブレイク
 
