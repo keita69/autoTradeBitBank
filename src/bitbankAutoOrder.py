@@ -492,7 +492,10 @@ if __name__ == '__main__':
             _, _ = ao.sell_order(buy_result)   # 売り注文処理
 
             activeOrders = bitbank.get_active_orders()["orders"]
-            ao.myLogger.debug("デバッグ 注文一覧 {0}".format(activeOrders))
+            if activeOrders != {}:
+                ao.myLogger.debug("デバッグ 注文一覧 {0}".format(activeOrders))
+                time.sleep(60)
+                ao.myLogger.debug("デバッグ ６０秒後 注文一覧 {0}".format(activeOrders))
             if activeOrders != {}:
                 line.notify_line_stamp("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)), "1", "422")
