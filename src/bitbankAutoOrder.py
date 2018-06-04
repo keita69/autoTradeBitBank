@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import time
 
 import pandas as pd
@@ -41,15 +40,15 @@ class Bitbank:
     def get_total_assets(self):
         """ 現在の総資産（円）の取得 """
         balances = self.prvApi.get_asset()
-        total_assets = 0.0
+        total = 0.0
         for data in balances['assets']:
             if data['asset'] == 'jpy':
-                total_assets = total_assets + float(data['onhand_amount'])
+                total = total + float(data['onhand_amount'])
             elif data['asset'] == 'xrp':
                 xrp_last, _, _ = self.get_xrp_jpy_value()
                 xrp_assets = float(data['onhand_amount']) * float(xrp_last)
-                total_assets = total_assets + xrp_assets
-        return total_assets
+                total = total + xrp_assets
+        return total
 
     def get_xrp_jpy_value(self):
         """ 現在のXRP価格を取得 """
@@ -115,9 +114,9 @@ class AutoOrder:
     def get_order_price(self, order):
         """ 価格または平均価格から価格を取得する """
         self.myLogger.debug("注文の価格を取得する {0}".format(order))
-        if (order.get("price") is not None):
+        if order.get("price") is not None:
             p = order["price"]
-        elif (order.get("average_price") is not None):
+        elif order.get("average_price") is not None:
             p = order["average_price"]
         else:
             raise AttributeError
@@ -144,40 +143,40 @@ class AutoOrder:
         # self.myLogger.debug("注文時の数量：{0:.0f}".format(f_start_amount))
         result = False
         if status == "FULLY_FILLED":
-            msg = ("{0} 注文 約定済 {7}：{1:.3f} 円 x {2:.0f}({3}) "
-                   "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
-            self.myLogger.info(msg.format(side,
-                                          f_price,
-                                          f_executed_amount,
-                                          pair,
-                                          f_last,
-                                          f_threshold_price,
-                                          order_id,
-                                          status))
+            msg_promise = ("{0} 注文 約定済 {7}：{1:.3f} 円 x {2:.0f}({3}) "
+                           "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
+            self.myLogger.info(msg_promise.format(side,
+                                                  f_price,
+                                                  f_executed_amount,
+                                                  pair,
+                                                  f_last,
+                                                  f_threshold_price,
+                                                  order_id,
+                                                  status))
             result = True
         elif status == "CANCELED_UNFILLED":
-            msg = ("{0} 注文 キャンセル済 {7}：{1:.3f} 円 x {2:.0f}({3}) "
-                   "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
-            self.myLogger.info(msg.format(side,
-                                          f_price,
-                                          f_executed_amount,
-                                          pair,
-                                          f_last,
-                                          f_threshold_price,
-                                          order_id,
-                                          status))
+            msg_cancel = ("{0} 注文 キャンセル済 {7}：{1:.3f} 円 x {2:.0f}({3}) "
+                          "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
+            self.myLogger.info(msg_cancel.format(side,
+                                                 f_price,
+                                                 f_executed_amount,
+                                                 pair,
+                                                 f_last,
+                                                 f_threshold_price,
+                                                 order_id,
+                                                 status))
             result = True
         else:
-            msg = ("{0} 注文 約定待ち {7}：{1:.3f}円 x {2:.0f}({3}) "
-                   "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
-            self.myLogger.info(msg.format(side,
-                                          f_price,
-                                          f_remaining_amount,
-                                          pair,
-                                          f_last,
-                                          f_threshold_price,
-                                          order_id,
-                                          status))
+            msg_wait = ("{0} 注文 約定待ち {7}：{1:.3f}円 x {2:.0f}({3}) "
+                        "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
+            self.myLogger.info(msg_wait.format(side,
+                                               f_price,
+                                               f_remaining_amount,
+                                               pair,
+                                               f_last,
+                                               f_threshold_price,
+                                               order_id,
+                                               status))
         return result
 
     def get_buy_order_info(self):
@@ -248,9 +247,9 @@ class AutoOrder:
         condition_3 = dead_cross
 
         if condition_1 or condition_2 or condition_3:
-            msg = ("【損切判定されました 現在値：{0} 損切値：{1} 】"
-                   .format(f_last, stop_loss_price))
-            self.myLogger.info(msg)
+            msg_cond = ("【損切判定されました 現在値：{0} 損切値：{1} 】"
+                        .format(f_last, stop_loss_price))
+            self.myLogger.info(msg_cond)
             return True
         else:
             return False
@@ -294,40 +293,40 @@ class AutoOrder:
         ema_abs_sum = df_ema_diff_short.abs().sum(axis=0).values[0]
         condition_2 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
-        msg = (
+        msg_cond = (
             "買注文待 last:{0:.3f} {1} EMS_SUM：{2:.3f}({3:.3f}) C[{4}][{5}]")
-        self.myLogger.debug(msg.format(f_last, macd_status,
-                                       ema_abs_sum, EMS_DIFF_THRESHOLD,
-                                       condition_1, condition_2))
+        self.myLogger.debug(msg_cond.format(f_last, macd_status,
+                                            ema_abs_sum, EMS_DIFF_THRESHOLD,
+                                            condition_1, condition_2))
 
         if condition_1 and condition_2:
             return True
 
         return False
 
-    def is_buy_order_cancel(self, buy_order_result):
+    def is_buy_order_cancel(self, order_result):
         """ 買い注文のキャンセル判定 """
         last, _, _ = self.bitbank.get_xrp_jpy_value()
         f_last = float(last)  # 現在値
 
-        f_buy_order_price = self.get_order_price(buy_order_result)
+        f_order_price = self.get_order_price(order_result)
         f_last = float(last)
-        f_buy_cancel_price = float(self.get_buy_cancel_price(buy_order_result))
+        f_cancel_price = float(self.get_buy_cancel_price(order_result))
 
-        if f_last > f_buy_cancel_price:
-            msg = ("last:{0:.3f} 買い注文価格:{1:.3f} 再注文価格:{2:.3f}"
-                   .format(f_last, f_buy_order_price, f_buy_cancel_price))
-            self.myLogger.debug(msg)
+        if f_last > f_cancel_price:
+            msg_rebuy = ("last:{0:.3f} 買い注文価格:{1:.3f} 再注文価格:{2:.3f}"
+                         .format(f_last, f_order_price, f_cancel_price))
+            self.myLogger.debug(msg_rebuy)
             return True
         else:
             return False
 
-    def get_buy_cancel_price(self, buy_order_result):
+    def get_buy_cancel_price(self, order_result):
         """ 買い注文 キャンセル 価格 取得
         買い注文価格からTHRESHOLD価格が高騰したら再度買い注文をする
         """
-        f_buy_order_price = self.get_order_price(buy_order_result)
-        return self.BUY_CANCEL_THRESHOLD + f_buy_order_price
+        f_order_price = self.get_order_price(order_result)
+        return self.BUY_CANCEL_THRESHOLD + f_order_price
 
     def buy_order(self):
         """ 買い注文処理 """
@@ -354,20 +353,20 @@ class AutoOrder:
             time.sleep(self.POLLING_SEC_BUY)
 
             # 買い注文結果を取得
-            buy_order_result = self.bitbank.prvApi.get_order(
+            result = self.bitbank.prvApi.get_order(
                 buy_value["pair"],     # ペア
                 buy_value["order_id"]  # 注文タイプ 成行(market)
             )
 
             # 買い注文の約定判定
-            if self.is_fully_filled(buy_order_result, 0.0):
-                price = self.get_order_price(buy_order_result)
-                msg = "買い注文約定 {0}円 ID：{1}".format(
-                    price, buy_order_result["order_id"])
-                self.line.notify_line(msg)
+            if self.is_fully_filled(result, 0.0):
+                price = self.get_order_price(result)
+                msg_promise = "買い注文約定 {0}円 ID：{1}".format(
+                    price, result["order_id"])
+                self.line.notify_line(msg_promise)
                 break
 
-        return buy_order_result  # 買い注文終了(売り注文へ)
+        return result  # 買い注文終了(売り注文へ)
 
     def sell_order(self, buy_order_result):
         """ 売り注文処理 """
@@ -453,9 +452,9 @@ class AutoOrder:
                 f_buy = self.get_order_price(buy_order_result)
                 f_benefit = (f_sell - f_buy) * f_amount
 
-                msg = ("デバッグ 売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP"
-                       "ID：{2} f_sell={3:.3f} f_buy={4:.3f}")
-                self.myLogger.debug(msg.format(
+                msg_promise = ("デバッグ 売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP"
+                               "ID：{2} f_sell={3:.3f} f_buy={4:.3f}")
+                self.myLogger.debug(msg_promise.format(
                     f_benefit, f_amount, order_id, f_sell, f_buy))
 
                 line_msg = "売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{2}"
@@ -489,17 +488,17 @@ if __name__ == '__main__':
             msg = "=== 処理開始[NO.{0}] 総資産:{1}円===".format(count, total_assets)
             ao.myLogger.info(msg)
             line.notify_line(msg)
-            buy_order_result = ao.buy_order()                       # 買い注文処理
-            buy_order_result, _ = ao.sell_order(buy_order_result)   # 売り注文処理
+            buy_result = ao.buy_order()                       # 買い注文処理
+            _, _ = ao.sell_order(buy_result)   # 売り注文処理
 
             activeOrders = bitbank.get_active_orders()["orders"]
-            if len(activeOrders) != 0:
+            if activeOrders != "":
                 line.notify_line_stamp("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)), "1", "422")
                 ao.myLogger.debug("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)))
 
-                for j in range(len(activeOrders)):
+                for j in range(activeOrders):
                     ao.myLogger.debug(
                         "現在のオーダー一覧 :{0}".format(activeOrders[j]))
 
