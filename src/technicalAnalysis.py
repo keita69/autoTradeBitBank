@@ -50,8 +50,13 @@ class MyTechnicalAnalysisUtil:
         yyyymmdd = now_utc.strftime('%Y%m%d')
         # self.myLogger.debug(
         #    "yyyymmdd={0} candle_type={1}".format(yyyymmdd, candle_type))
-        candlestick = self.pubApi.get_candlestick(
-            "xrp_jpy", candle_type, yyyymmdd)
+        try:
+            candlestick = self.pubApi.get_candlestick(
+                "xrp_jpy", candle_type, yyyymmdd)
+        except ConnectionResetError as cre:
+            self.myLogger.exception("get_canlestickでエラー。再実行します", cre)
+            candlestick = self.pubApi.get_candlestick(
+                "xrp_jpy", candle_type, yyyymmdd)
 
         ohlcv = candlestick["candlestick"][0]["ohlcv"]
         df_ohlcv = pd.DataFrame(ohlcv,
