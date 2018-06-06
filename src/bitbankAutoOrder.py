@@ -235,7 +235,7 @@ class AutoOrder:
         RSI_THRESHOLD = 60
         f_rsi = float(self.mtau.get_rsi(9, "1min"))
         over_rsi = (f_rsi > RSI_THRESHOLD)
-        n = 0.30
+        n = 0.60
         f_stop_loss_price_n = float(
             self.get_stop_loss_price_n(sell_order_result, n))
         over_stop_loss_n = (f_stop_loss_price_n > f_last)
@@ -247,8 +247,9 @@ class AutoOrder:
         condition_3 = dead_cross
 
         if condition_1 or condition_2 or condition_3:
-            msg_cond = ("【損切判定されました 現在値：{0} 損切値：{1} 】"
-                        .format(f_last, stop_loss_price))
+            msg_cond = ("【損切判定されました 現在値：{0:.3f} 損切値：{1:.3f}】C[{2}][{3}][{4}]"
+                        .format(f_last, stop_loss_price,
+                                condition_1, condition_2, condition_3))
             self.myLogger.info(msg_cond)
             return True
         else:
