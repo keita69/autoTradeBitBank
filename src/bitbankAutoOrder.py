@@ -272,7 +272,8 @@ class AutoOrder:
         """ 買い注文の判定
         条件(condition)：
             1. 1min MACDクロスがゴールデンクロスの場合　かつ
-            2. 5min MACDが正の場合　かつ
+            2. 5min MACD - シグナル が正の場合　かつ
+               シグナルをMACDが下から上へ抜けた時＝上昇トレンドが始まるよーー！＝買いシグナル
             3. EMSクロスdiffの絶対値の総和がEMS_DIFF_THRESHOLD以上
         """
 
@@ -285,9 +286,9 @@ class AutoOrder:
 
         # 条件2
         df_macd_5 = self.mtau.get_macd("5min")
-        macd_5 = df_macd_5.head(1)["macd"][0]
-        self.myLogger.debug("5min MACD{0}".format(df_macd_5))
-        condition_2 = (macd_5 > 0)
+        macd_5 = df_macd_5.head(2)["macd"][1]
+        sig_5 = df_macd_5.head(2)["signal"][1]
+        condition_2 = (macd_5 - sig_5 > 0)
 
         # 条件3
         n_short = 9
