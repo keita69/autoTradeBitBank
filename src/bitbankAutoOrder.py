@@ -303,12 +303,14 @@ class AutoOrder:
         condition_3 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
         msg_cond = (
-            "買注文待 last:{0:.3f} {1} EMS_SUM：{2:.3f}({3:.3f}) C[{4}][{5}][{6}]")
+            "買注文待 last:{0:.3f} {1} EMS_SUM：{2:.3f}({3:.3f}) C[{4}][{5}][{6}] macd_5:{7} sig_5:{8}")
         self.myLogger.debug(msg_cond.format(f_last, macd_status,
                                             ema_abs_sum, EMS_DIFF_THRESHOLD,
                                             condition_1,
                                             condition_2,
-                                            condition_3))
+                                            condition_3,
+                                            macd_5,
+                                            sig_5))
 
         if condition_1 and condition_2 and condition_3:
             return True
