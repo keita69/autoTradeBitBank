@@ -221,8 +221,7 @@ class AutoOrder:
         """ 売り注文(損切注文)の判定 下記、条件の場合は損切をする（True）
                 条件(condition)：
             1. 含み損が損切価格より大きい　または
-            2. RSIが閾値(RSI_THRESHOLD)より大きい　かつ　含み損が損切価格の(n*100)％より大きい　または
-            3. MACDクロスがデッドクロスの場合
+            2. RSIが閾値(RSI_THRESHOLD)より大きい　かつ　含み損が損切価格の(n*100)％より大きい
         """
 
         # 条件1
@@ -235,21 +234,16 @@ class AutoOrder:
         RSI_THRESHOLD = 60
         f_rsi = float(self.mtau.get_rsi(9, "1min"))
         over_rsi = (f_rsi > RSI_THRESHOLD)
-        n = 0.60
+        n = 0.30
         f_stop_loss_price_n = float(
             self.get_stop_loss_price_n(sell_order_result, n))
         over_stop_loss_n = (f_stop_loss_price_n > f_last)
         condition_2 = over_rsi and over_stop_loss_n
 
-        # 条件3
-        status = self.mtau.get_macd_cross_status("1min")
-        dead_cross = (status == MacdCross.DEAD)
-        condition_3 = dead_cross
-
-        if condition_1 or condition_2 or condition_3:
-            msg_cond = ("【損切判定されました 現在値：{0:.3f} 損切値：{1:.3f}】C[{2}][{3}][{4}]"
+        if condition_1 or condition_2:
+            msg_cond = ("【損切判定されました 現在値：{0:.3f} 損切値：{1:.3f}】C[{2}][{3}]"
                         .format(f_last, stop_loss_price,
-                                condition_1, condition_2, condition_3))
+                                condition_1, condition_2))
             self.myLogger.info(msg_cond)
             return True
         else:
@@ -273,7 +267,7 @@ class AutoOrder:
         """ 買い注文の判定
         条件(condition)：
             1. 1min MACDクロスがゴールデンクロスの場合　かつ
-            2. 5min MACD - シグナル が正の場合　かつ
+            2. (5min MACD - シグナル) が正の場合　かつ
                シグナルをMACDが下から上へ抜けた時＝上昇トレンドが始まるよーー！＝買いシグナル
             3. EMSクロスdiffの絶対値の総和がEMS_DIFF_THRESHOLD以上
         """
@@ -303,7 +297,8 @@ class AutoOrder:
         condition_3 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
         msg_cond = (
-            "買注文待 last:{0:.3f} {1} EMS_SUM：{2:.3f}({3:.3f}) C[{4}][{5}][{6}] macd_5:{7} sig_5:{8}")
+            "買注文待 last:{0:.3f} {1} EMS_SUM：{2:.3f}({3:.3f}) C[{4}][{5}][{6}] \
+            macd_5:{7} sig_5:{8}")
         self.myLogger.debug(msg_cond.format(f_last, macd_status,
                                             ema_abs_sum, EMS_DIFF_THRESHOLD,
                                             condition_1,
