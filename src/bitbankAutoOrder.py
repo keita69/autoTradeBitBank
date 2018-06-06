@@ -271,8 +271,9 @@ class AutoOrder:
     def is_buy_order(self):
         """ 買い注文の判定
         条件(condition)：
-            1. MACDクロスがゴールデンクロスの場合　かつ
-            2. EMSクロスdiffの絶対値の総和がEMS_DIFF_THRESHOLD以上
+            1. 1min MACDクロスがゴールデンクロスの場合　かつ
+            2. 5min MACDが正の場合　かつ
+            3. EMSクロスdiffの絶対値の総和がEMS_DIFF_THRESHOLD以上
         """
 
         last, _, _ = self.bitbank.get_xrp_jpy_value()
@@ -283,6 +284,11 @@ class AutoOrder:
         condition_1 = (macd_status == MacdCross.GOLDEN)
 
         # 条件2
+        df_macd_5 = self.mtau.get_macd("5min")
+        macd_5 = df_macd_5.head(1)["macd"][0]
+        condition_2 = (macd_5 > 0)
+
+        # 条件3
         n_short = 9
         n_long = 26
         EMS_DIFF_THRESHOLD = 0.1
@@ -291,15 +297,17 @@ class AutoOrder:
             df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
         df_ema_diff_short = df_ema_diff.tail(n_short)
         ema_abs_sum = df_ema_diff_short.abs().sum(axis=0).values[0]
-        condition_2 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
+        condition_3 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
         msg_cond = (
-            "買注文待 last:{0:.3f} {1} EMS_SUM：{2:.3f}({3:.3f}) C[{4}][{5}]")
+            "買注文待 last:{0:.3f} {1} EMS_SUM：{2:.3f}({3:.3f}) C[{4}][{5}][{6}]")
         self.myLogger.debug(msg_cond.format(f_last, macd_status,
                                             ema_abs_sum, EMS_DIFF_THRESHOLD,
-                                            condition_1, condition_2))
+                                            condition_1,
+                                            condition_2,
+                                            condition_3))
 
-        if condition_1 and condition_2:
+        if condition_1 and condition_2 and condition_3:
             return True
 
         return False
