@@ -53,6 +53,10 @@ class MyLogger:
         """ ERROR	40	エラーなど重大な問題 """
         self.logger.error(msg)
 
+    def exception(self, msg, ex):
+        """ Exception   40	例外など重大な問題 """
+        self.logger.exception(msg, ex)
+
     def critical(self, msg):
         """ CRITICAL	50	停止など致命的な問題 """
         self.logger.critical(msg)
