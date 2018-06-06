@@ -298,7 +298,7 @@ class AutoOrder:
 
         msg_cond = (
             "買注文待 last:{0:.3f} {1} EMS_SUM：{2:.3f}({3:.3f}) C[{4}][{5}][{6}] \
-            macd_5:{7} sig_5:{8}")
+            macd_5:{7:.3f} sig_5:{8:.3f}")
         self.myLogger.debug(msg_cond.format(f_last, macd_status,
                                             ema_abs_sum, EMS_DIFF_THRESHOLD,
                                             condition_1,
