@@ -286,8 +286,8 @@ class AutoOrder:
         # 条件2
         df_macd_5 = self.mtau.get_macd("5min")
         self.myLogger.debug("5min macd {0}".format(df_macd_5))
-        macd_5 = df_macd_5.tail(1)["macd"][0]
-        sig_5 = df_macd_5.tail(1)["signal"][0]
+        macd_5 = df_macd_5.iloc[-1]["macd"]
+        sig_5 = df_macd_5.iloc[-1]["signal"]
         condition_2 = (macd_5 > sig_5)
 
         # 条件3
