@@ -37,7 +37,7 @@ class MyTechnicalAnalysisUtil:
         self.RSI_N = 14
 
     def get_candlestick(self, candle_type):
-        """ 最新のチャート情報（ロウソク）をN個以上取得する。
+        """ 最新のチャート情報（ロウソク）を今日と昨日の２日分取得する。
         ・サンプル
                    open   hight     low   close      amount           time
             221  65.372  65.401  65.351  65.400  39242.7256  1527738060000
@@ -69,8 +69,15 @@ class MyTechnicalAnalysisUtil:
 
         yesterday = now_utc - timedelta(days=1)
         str_yesterday = yesterday.strftime('%Y%m%d')
-        yday_candlestick = self.pubApi.get_candlestick(
-            "xrp_jpy", candle_type, str_yesterday)
+        try:
+            yday_candlestick = self.pubApi.get_candlestick(
+                "xrp_jpy", candle_type, str_yesterday)
+        except ConnectionResetError as cre:
+            self.myLogger.exception(
+                "get_canlestick(yesterday)でエラー。再実行します", cre)
+            candlestick = self.pubApi.get_candlestick(
+                "xrp_jpy", candle_type, str_yesterday)
+
         yday_ohlcv = yday_candlestick["candlestick"][0]["ohlcv"]
         df_yday_ohlcv = pd.DataFrame(yday_ohlcv,
                                      columns=["open",      # 始値
