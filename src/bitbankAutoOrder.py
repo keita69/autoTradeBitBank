@@ -291,9 +291,9 @@ class AutoOrder:
         condition_2 = (macd_5 - sig_5 > 0)
         self.myLogger.debug("5min macd 2 {0}".format(df_macd_5.head(2)))
         self.myLogger.debug("5min macd 2 macd {0}".format(
-            df_macd_5.head(2)["macd"]))
+            df_macd_5.head(2)["macd"][1]))
         self.myLogger.debug("5min macd 2 signal {0}".format(
-            df_macd_5.head(2)["signal"]))
+            df_macd_5.head(2)["signal"][1]))
 
         # 条件3
         n_short = 9
