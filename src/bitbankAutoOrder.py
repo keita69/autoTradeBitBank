@@ -52,9 +52,13 @@ class Bitbank:
 
     def get_xrp_jpy_value(self):
         """ 現在のXRP価格を取得 """
-        value = self.pubApi.get_ticker(
-            'xrp_jpy'  # ペア
-        )
+        try:
+            value = self.pubApi.get_ticker(
+                'xrp_jpy'  # ペア
+            )
+        except BaseException as be:
+            self.myLogger.exception("r現在のXRP価格取得失敗。リトライ", be)
+            self.get_xrp_jpy_value()
 
         last = value['last']  # 現在値
         sell = value['sell']  # 現在の売り注文の最安値
