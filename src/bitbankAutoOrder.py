@@ -289,7 +289,7 @@ class AutoOrder:
         macd_5 = df_macd_5.head(2)["macd"][1]
         sig_5 = df_macd_5.head(2)["signal"][1]
         condition_2 = (macd_5 - sig_5 > 0)
-        self.myLogger.debug("5min macd 2 {0}".format(df_macd_5))
+        self.myLogger.debug("5min macd 2 {0}".format(df_macd_5.head(2)))
 
         # 条件3
         n_short = 9

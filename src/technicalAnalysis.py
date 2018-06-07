@@ -150,8 +150,8 @@ class MyTechnicalAnalysisUtil:
         df_ema = self.get_ema(candle_type, n_short, n_long)
         df_ema["macd"] = df_ema["ema_short"] - df_ema["ema_long"]
         df_ema["signal"] = df_ema["macd"].ewm(span=n_signal).mean()
-        self.myLogger.debug(
-            "\n======== df_ema {1} =======\n\n {0}".format(df_ema, candle_type))
+        # self.myLogger.debug(
+        #     "\n======== df_ema {1} =======\n\n {0}".format(df_ema, candle_type))
 
         return df_ema
 
