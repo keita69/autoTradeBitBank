@@ -436,7 +436,7 @@ if __name__ == '__main__':
             at.myLogger.info(msg)
             line.notify_line(msg)
             buy_result = at.buy_order()        # 買い注文処理
-            _, _ = at.sell_order(buy_result)   # 売り注文処理
+            at.sell_order(buy_result)   # 売り注文処理
 
             activeOrders = bitbank.get_active_orders()["orders"]
             if activeOrders != []:
