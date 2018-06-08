@@ -48,3 +48,19 @@ def test_get_ema():
     mtau = MyTechnicalAnalysisUtil()
     ema = mtau.get_ema("1min", n_short, n_long)
     assert ema is not None
+
+
+def test_get_candlestick_range():
+    start = "20180608"
+    end = "20180606"
+    mtau = MyTechnicalAnalysisUtil()
+    try:
+        df = mtau.get_candlestick_range("1min", start, end)
+    except ValueError:
+        assert True
+
+    start = "20180606"
+    end = "20180608"
+    mtau = MyTechnicalAnalysisUtil()
+    df = mtau.get_candlestick_range("1min", start, end)
+    print(df)

@@ -36,6 +36,39 @@ class MyTechnicalAnalysisUtil:
         self.myLogger = MyLogger(__name__)
         self.RSI_N = 14
 
+    def get_candlestick_range(self, candle_type, s_yyyymmdd, e_yyyymmdd):
+        """ チャート情報（ロウソク）をstart(yyyymmdd)-end(yyyymmdd)期間分取得する
+        """
+        start_ymd = datetime.strptime(s_yyyymmdd, '%Y%m%d')
+        end_ymd = datetime.strptime(e_yyyymmdd, '%Y%m%d')
+
+        if start_ymd > end_ymd:
+            raise ValueError
+
+        crnt_ymd = end_ymd
+
+        df = pd.DataFrame()
+
+        while True:
+            str_crnt_ymd = crnt_ymd.strftime('%Y%m%d')
+            candlestick = self.pubApi.get_candlestick(
+                "xrp_jpy", candle_type, str_crnt_ymd)
+            ohlcv = candlestick["candlestick"][0]["ohlcv"]
+            df_ohlcv = pd.DataFrame(ohlcv,
+                                    columns=["open",   # 始値
+                                             "hight",   # 高値
+                                             "low",     # 安値
+                                             "close",   # 終値
+                                             "amount",  # 出来高
+                                             "time"])   # UnixTime
+            df = df.append(df_ohlcv, ignore_index=True)
+            if str_crnt_ymd == s_yyyymmdd:
+                break
+
+            crnt_ymd = crnt_ymd - timedelta(days=1)
+
+        return df
+
     def get_candlestick(self, candle_type):
         """ 最新のチャート情報（ロウソク）を今日と昨日の２日分取得する。
         ・サンプル
@@ -151,7 +184,7 @@ class MyTechnicalAnalysisUtil:
         df_ema["macd"] = df_ema["ema_short"] - df_ema["ema_long"]
         df_ema["signal"] = df_ema["macd"].ewm(span=n_signal).mean()
         # self.myLogger.debug(
-        #     "\n======== df_ema {1} =======\n\n {0}".format(df_ema, candle_type))
+        #     "\n======== df_ema {1} \n\n {0}".format(df_ema, candle_type))
 
         return df_ema
 
