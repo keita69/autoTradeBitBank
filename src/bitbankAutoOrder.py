@@ -313,18 +313,18 @@ class AutoTrader:
             time.sleep(self.POLLING_SEC_BUY)
 
             # 買い注文結果を取得
-            result = self.bitbank.prvApi.get_order(
+            buy_order_result = self.bitbank.prvApi.get_order(
                 buy_value["pair"],     # ペア
                 buy_value["order_id"]  # 注文タイプ 成行(market)
             )
-            self.order.buy_result(result)
+            self.order.buy_result = buy_order_result
 
             # 買い注文の約定判定
-            if self.is_fully_filled(result):
+            if self.is_fully_filled(buy_order_result):
                 self.notify_buy(self.order)
                 break
 
-        return result  # 買い注文終了(売り注文へ)
+        return buy_order_result  # 買い注文終了(売り注文へ)
 
     def is_waittig_sell_order(self, order):
         """ 売り注文（成行）できない（待ち状態）か判定する
