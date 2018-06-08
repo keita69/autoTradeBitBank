@@ -103,10 +103,10 @@ class AutoOrder:
 
         self.BUY_ORDER_RANGE = 0.0
         self.BUY_CANCEL_THRESHOLD = 0.5  # 再買い注文するための閾値
-        self.SELL_ORDER_RANGE = 0.05
+        self.SELL_ORDER_RANGE = 0.1
         self.POLLING_SEC_MAIN = 15
-        self.POLLING_SEC_BUY = 0.01
-        self.POLLING_SEC_SELL = 0.01
+        self.POLLING_SEC_BUY = 0.1
+        self.POLLING_SEC_SELL = 0.1
 
         self.myLogger = MyLogger(__name__)
 
