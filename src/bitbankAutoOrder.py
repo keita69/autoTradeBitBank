@@ -60,9 +60,9 @@ class Bitbank:
             self.myLogger.exception("r現在のXRP価格取得失敗。リトライ", be)
             self.get_xrp_jpy_value()
 
-        last = value['last']  # 現在値
-        sell = value['sell']  # 現在の売り注文の最安値
-        buy = value['buy']    # 現在の買い注文の最高値
+        last = float(value['last'])  # 現在値
+        sell = float(value['sell'])  # 現在の売り注文の最安値
+        buy = float(value['buy'])    # 現在の買い注文の最高値
 
         return last, sell, buy
 
