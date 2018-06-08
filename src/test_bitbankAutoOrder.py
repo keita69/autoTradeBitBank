@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from bitbankAutoOrder import Bitbank, AutoOrder
+from bitbankAutoOrder import Bitbank, AutoTrader, Order
 
 
 def test_patch_get_xrp_jpy_value(monkeypatch):
@@ -33,7 +33,8 @@ def test_get_total_assets():
 
 
 def test_get_buy_cancel_price():
-    ao = AutoOrder()
+    od = Order()
+    ao = AutoTrader(od)
     buy_order_result = {
         "order_id": 43763954,
         "pair": "xrp_jpy",
@@ -62,7 +63,8 @@ def test_get_active_orders():
 
 
 def test_is_buy_order():
-    ao = AutoOrder()
+    od = Order()
+    ao = AutoTrader(od)
     ao.is_buy_order()
 
 
@@ -80,12 +82,12 @@ def test_is_buy_order_cancel():
         "executed_at": 1527856988273,
         "status": "FULLY_FILLED"
     }
-    ao = AutoOrder()
+    od = Order()
+    ao = AutoTrader(od)
     assert ao.is_buy_order_cancel(buy_order_result) is False
 
 
 def test_is_fully_filled():
-    threshold_price = 100000000
     buy_order_result = {
         "order_id": 43763954,
         "pair": "xrp_jpy",
@@ -99,18 +101,21 @@ def test_is_fully_filled():
         "executed_at": 1527856988273,
         "status": "FULLY_FILLED"
     }
-    ao = AutoOrder()
-    assert ao.is_fully_filled(buy_order_result, threshold_price) is True
+    od = Order()
+    od.buy_result = buy_order_result
+    ao = AutoTrader(od)
+    assert ao.is_fully_filled(buy_order_result) is True
 
     buy_order_result["status"] = "CANCELED_UNFILLED"
-    assert ao.is_fully_filled(buy_order_result, threshold_price) is True
+    assert ao.is_fully_filled(buy_order_result) is False
 
     buy_order_result["status"] = "UNFILLED"
-    assert ao.is_fully_filled(buy_order_result, threshold_price) is False
+    assert ao.is_fully_filled(buy_order_result) is False
 
 
 def test_get_buy_order_info():
-    ao = AutoOrder()
+    od = Order()
+    ao = AutoTrader(od)
     buy_order_info = ao.get_buy_order_info()
     assert buy_order_info["amount"] == ao.AMOUNT
     assert buy_order_info["orderSide"] == "buy"
@@ -118,18 +123,9 @@ def test_get_buy_order_info():
 
 
 def test_get_sell_order_info():
-    ao = AutoOrder()
+    od = Order()
+    ao = AutoTrader(od)
     sell_order_info = ao.get_sell_order_info()
-    assert sell_order_info["amount"] == ao.AMOUNT
-    assert sell_order_info["orderSide"] == "sell"
-    assert sell_order_info["orderType"] == "limit"
-
-
-def test_get_sell_order_info_by_barket():
-    ao = AutoOrder()
-    amount = ao.AMOUNT
-    price = "10000"
-    sell_order_info = ao.get_sell_order_info_by_barket(amount, price)
     assert sell_order_info["amount"] == ao.AMOUNT
     assert sell_order_info["orderSide"] == "sell"
     assert sell_order_info["orderType"] == "market"
@@ -140,7 +136,7 @@ def test_is_stop_loss():
         "order_id": 43763954,
         "pair": "xrp_jpy",
         "side": "sell",
-        "type": "limit",
+        "type": "market",
         "start_amount": "1.000000",
         "remaining_amount": "0.000000",
         "executed_amount": "1.000000",
@@ -149,5 +145,6 @@ def test_is_stop_loss():
         "executed_at": 1527856988273,
         "status": "FULLY_FILLED"
     }
-    ao = AutoOrder()
+    od = Order()
+    ao = AutoTrader(od)
     assert ao.is_stop_loss(sell_order_result) is False

@@ -31,12 +31,6 @@ class MyLogger:
         sh.setFormatter(formatter)
         self.logger.addHandler(sh)
 
-        rfh = TimedRotatingFileHandler(
-            './log.txt', when="d", interval=1, backupCount=20)
-        rfh.setLevel(DEBUG)
-        rfh.setFormatter(formatter)
-        self.logger.addHandler(rfh)
-
     def debug(self, msg):
         """ DEBUG	10	動作確認などデバッグの記録 """
         self.logger.debug(msg)

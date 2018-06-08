@@ -71,36 +71,17 @@ class Bitbank:
         return self.prvApi.get_active_orders('xrp_jpy')
 
 
-class AutoOrder:
+class AutoTrader:
     """ 自動売買
-    ■ 制御フロー
-        全体処理 LOOP
-            買い注文処理
-                買い注文判定 LOOP
-                買い注文約定待ち LOOP
-                    買い注文約定判定
-                        買い注文約定 BREAK
-                    買い注文キャンセル判定
-                        買い注文キャンセル注文
-                        買い注文(成行)
-                        CONTINUE(買い注文約定待ち LOOPへ)
-
-            売り注文処理
-                売り注文処理
-                売り注文約定待ち LOOP
-                    売り注文約定判定
-                        売り注文約定 BREAK
-                    損切処理判定
-                        売り注文キャンセル注文
-                        売り注文(成行)
-                        売り注文(成行)約定待ち LOOP
     """
 
-    def __init__(self):
+    def __init__(self, order):
         """ コンストラクタ """
+        self.order = order
         self.LOOP_COUNT_MAIN = 10
         self.AMOUNT = "1"
 
+        self.BENEFIT = 0.5  # 利益
         self.BUY_ORDER_RANGE = 0.0
         self.BUY_CANCEL_THRESHOLD = 0.5  # 再買い注文するための閾値
         self.SELL_ORDER_RANGE = 0.1
@@ -128,71 +109,50 @@ class AutoOrder:
         f_price = float(p)
         return f_price
 
-    def is_fully_filled(self, orderResult, threshold_price):
+    def is_fully_filled(self, orderResult):
         """ 注文の約定を判定 """
         last, _, _ = self.bitbank.get_xrp_jpy_value()
 
         side = orderResult["side"]
-        order_id = orderResult["order_id"]
-        pair = orderResult["pair"]
-        status = orderResult["status"]
         f_price = self.get_order_price(orderResult)
-        # f_start_amount = float(orderResult["remaining_amount"])    # 注文時の数量
+        status = orderResult["status"]
         f_remaining_amount = float(orderResult["remaining_amount"])  # 未約定の数量
         f_executed_amount = float(orderResult["executed_amount"])    # 約定済み数量
-
-        f_threshold_price = float(threshold_price)  # buy:買直し sell:損切 価格
+        pair = orderResult["pair"]
         f_last = float(last)
+        order_id = orderResult["order_id"]
 
         # self.myLogger.debug("注文時の数量：{0:.0f}".format(f_start_amount))
         result = False
         if status == "FULLY_FILLED":
-            msg_promise = ("{0} 注文 約定済 {7}：{1:.3f} 円 x {2:.0f}({3}) "
-                           "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
+            msg_promise = ("{0} 注文 約定済 {6}：{1:.3f} 円 x {2:.0f}({3}) "
+                           "[現在:{4:.3f}円] ID：{5}")
             self.myLogger.info(msg_promise.format(side,
                                                   f_price,
                                                   f_executed_amount,
                                                   pair,
                                                   f_last,
-                                                  f_threshold_price,
                                                   order_id,
                                                   status))
             result = True
-        elif status == "CANCELED_UNFILLED":
-            msg_cancel = ("{0} 注文 キャンセル済 {7}：{1:.3f} 円 x {2:.0f}({3}) "
-                          "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
-            self.myLogger.info(msg_cancel.format(side,
-                                                 f_price,
-                                                 f_executed_amount,
-                                                 pair,
-                                                 f_last,
-                                                 f_threshold_price,
-                                                 order_id,
-                                                 status))
-            result = True
         else:
-            msg_wait = ("{0} 注文 約定待ち {7}：{1:.3f}円 x {2:.0f}({3}) "
-                        "[現在:{4:.3f}円] [閾値]：{5:.3f} ID：{6}")
+            msg_wait = ("{0} 注文 約定待ち {6}：{1:.3f}円 x {2:.0f}({3}) "
+                        "[現在:{4:.3f}円] ID：{5}")
             self.myLogger.info(msg_wait.format(side,
                                                f_price,
                                                f_remaining_amount,
                                                pair,
                                                f_last,
-                                               f_threshold_price,
                                                order_id,
                                                status))
         return result
 
     def get_buy_order_info(self):
         """ 買い注文(成行)のリクエスト情報を取得 """
-        # _, _, buy = self.bitbank.get_xrp_jpy_value()
-        # 買い注文アルゴリズム
-        # buyPrice = str(float(buy) - self.BUY_ORDER_RANGE)
-
         buy_order_info = {"pair": "xrp_jpy",      # ペア
                           "amount": self.AMOUNT,  # 注文枚数
                           # "price": buyPrice,    # 注文価格
-                          "price": 0,             # 注文価格
+                          "price": 0.0,             # 注文価格
                           "orderSide": "buy",     # buy
                           "orderType": "market"   # 成行(market)
                           }
@@ -200,24 +160,11 @@ class AutoOrder:
 
     def get_sell_order_info(self):
         """ 売り注文のリクエスト情報を取得 """
-        _, sell, _ = self.bitbank.get_xrp_jpy_value()
-        # 売り注文アルゴリズム
-        sellPrice = str(float(sell) + self.SELL_ORDER_RANGE)
         sell_order_info = {"pair": "xrp_jpy",      # ペア
                            "amount": self.AMOUNT,  # 注文枚数
-                           "price": sellPrice,     # 注文価格
+                           "price": 0.0,           # 注文価格
                            "orderSide": "sell",    # buy or sell
-                           "orderType": "limit"    # 指値注文の場合はlimit
-                           }
-        return sell_order_info
-
-    def get_sell_order_info_by_barket(self, amount, price):
-        """ 売り注文(成行)のリクエスト情報を取得 """
-        sell_order_info = {"pair": "xrp_jpy",      # ペア
-                           "amount": amount,       # 注文枚数
-                           "price": price,         # 注文価格
-                           "orderSide": "sell",    # buy or sell
-                           "orderType": "market"   # 成行注文の場合はmarket
+                           "orderType": "market"   # 指値注文の場合はlimit
                            }
         return sell_order_info
 
@@ -370,153 +317,139 @@ class AutoOrder:
                 buy_value["pair"],     # ペア
                 buy_value["order_id"]  # 注文タイプ 成行(market)
             )
+            self.order.buy_result(result)
 
             # 買い注文の約定判定
-            if self.is_fully_filled(result, 0.0):
-                price = self.get_order_price(result)
-                msg_promise = "買い注文約定 {0}円 ID：{1}".format(
-                    price, result["order_id"])
-                self.line.notify_line(msg_promise)
+            if self.is_fully_filled(result):
+                self.notify_buy(self.order)
                 break
 
         return result  # 買い注文終了(売り注文へ)
 
+    def is_waittig_sell_order(self, order):
+        """ 売り注文（成行）できない（待ち状態）か判定する
+        条件１：買い注文時の価格＋BENEFITが現在価格より小さい（まだ売れない）　または
+        条件２：現在価格より損切価格（stop loss price）が小さい（まだ売れない）　または
+        条件３：買い注文時の価格より前回のタイミングより増えている（まだ売れない）
+        """
+        last, _, _ = self.bitbank.get_xrp_jpy_value()
+
+        # 条件１
+        buy_price = self.get_order_price(order.buy_result)
+        condition1 = (buy_price + self.BENEFIT < last)
+
+        # 条件２
+        stop_loss_price = self.get_stop_loss_price(order.buy_result)
+        condition2 = last < stop_loss_price
+
+        # 条件３
+        condition3 = (order.pre_last > last)
+        cond_msg = "売り注文判定 [{0}][{1}][{2}]"
+        self.myLogger.debug(cond_msg.format(
+            condition1, condition2, condition3))
+
+        order.pre_last = last
+
+        return condition1 or condition2 or condition3
+
+    def notify_buy(self, order):
+        buy_price = self.get_order_price(order.buy_result)
+        buy_order_id = order.buy_result["order_id"]
+
+        self.line.notify_line(("買い価格 {0:.3f}円 ID：{1}")
+                              .format(buy_price, buy_order_id))
+
+    def notify_sell(self, order):
+        buy_price = self.get_order_price(order.buy_result)
+        sell_price = self.get_order_price(order.sell_result)
+        sell_order_id = order.sell_result["order_id"]
+        benefit = sell_price - buy_price
+
+        if benefit > 0:
+            # 利益
+            self.line.notify_line_stamp(("【利益】{0:.3f}円 売価格 {1:.3f}円 ID：{2}")
+                                        .format(benefit,
+                                                sell_price,
+                                                sell_order_id), "1", "10")
+        else:
+            # 損切
+            self.line.notify_line_stamp(("【損切】{0:.3f}円 売価格 {1:.3f}円 ID：{2}")
+                                        .format(benefit,
+                                                sell_price,
+                                                sell_order_id), "1", "104")
+
     def sell_order(self, buy_order_result):
         """ 売り注文処理 """
+
+        while self.is_waittig_sell_order(self.order):
+            time.sleep(self.POLLING_SEC_SELL)
+            break
+
         sell_order_info = self.get_sell_order_info()
-        sell_order_result = self.bitbank.prvApi.order(
+        sell_order_value = self.bitbank.prvApi.order(
             sell_order_info["pair"],       # ペア
             sell_order_info["price"],      # 価格
             sell_order_info["amount"],     # 注文枚数
-            sell_order_info["orderSide"],  # 注文サイド 売(sell)
-            sell_order_info["orderType"]   # 注文タイプ 指値(limit)
+            sell_order_info["orderSide"],  # 注文サイド
+            sell_order_info["orderType"]   # 注文タイプ
         )
-
-        self.line.notify_line(("売り注文発生 {0}円 ID：{1}")
-                              .format(sell_order_info["price"],
-                                      sell_order_result["order_id"]))
 
         while True:
             time.sleep(self.POLLING_SEC_SELL)
 
-            sell_order_status = self.bitbank.prvApi.get_order(
-                sell_order_result["pair"],     # ペア
-                sell_order_result["order_id"]  # 注文タイプ 指値 or 成行
+            sell_order_result = self.bitbank.prvApi.get_order(
+                sell_order_value["pair"],     # ペア
+                sell_order_value["order_id"]  # 注文タイプ 指値 or 成行
             )
 
-            stop_loss_price = self.get_stop_loss_price(sell_order_status)
-
-            # 売り注文約定　判定
-            if self.is_fully_filled(sell_order_status, stop_loss_price):
-                order_id = sell_order_status["order_id"]
-                f_amount = float(sell_order_status["executed_amount"])
-                f_sell = self.get_order_price(sell_order_status)
-                f_buy = self.get_order_price(buy_order_result)
-                f_benefit = (f_sell - f_buy) * f_amount
-
-                line_msg = "売り注文約定 利益：{0:.3f}円 x {1:.0f}XRP ID：{2}"
-                self.line.notify_line_stamp(line_msg.format(
-                    f_benefit, f_amount, order_id), "1", "10")
-                self.myLogger.debug(line_msg.format(
-                    f_benefit, f_amount, order_id))
-
+            if self.is_fully_filled(sell_order_result):
+                self.order.sell_result = sell_order_result
+                self.notify_sell(self.order)
                 break
 
-            # 損切する場合
-            stop_loss_price = self.get_stop_loss_price(sell_order_status)
-            if self.is_stop_loss(sell_order_status):
-                # 約定前の売り注文キャンセル(結果のステータスはチェックしない)
-                cancel_result = self.bitbank.prvApi.cancel_order(
-                    sell_order_status["pair"],     # ペア
-                    sell_order_status["order_id"]  # 注文ID
-                )
 
-                order_id = cancel_result["order_id"]
-                self.myLogger.debug("売りキャンセル注文ID：{0}".format(order_id))
+class Order:
+    def __init__(self):
+        self.buy_limit_ralue = 0.0    # buy指定価格
+        self.sell_limit_value = 0.0   # sell指定価格
 
-                while(self.is_fully_filled(
-                        cancel_result, stop_loss_price)):
-                    break
-
-                # 売り注文（成行）で損切
-                amount = buy_order_result["start_amount"]
-                price = self.get_order_price(buy_order_result)
-                sell_order_info_by_market = self.get_sell_order_info_by_barket(
-                    amount, price)
-
-                sell_market_result = self.bitbank.prvApi.order(
-                    sell_order_info_by_market["pair"],       # ペア
-                    sell_order_info_by_market["price"],      # 価格
-                    sell_order_info_by_market["amount"],     # 注文枚数
-                    sell_order_info_by_market["orderSide"],
-                    sell_order_info_by_market["orderType"]
-                )
-
-                while(self.is_fully_filled(
-                        sell_market_result, 0.0)):
-                    break
-
-                order_id = sell_market_result["order_id"]
-                self.myLogger.debug("売り注文（成行）ID：{0}".format(order_id))
-
-                order_id = sell_market_result["order_id"]
-                f_amount = float(sell_market_result["start_amount"])
-                f_sell = self.get_order_price(sell_market_result)
-                f_buy = self.get_order_price(buy_order_result)
-                f_benefit = (f_sell - f_buy) * f_amount
-
-                msg_promise = ("デバッグ 売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP"
-                               "ID：{2} f_sell={3:.3f} f_buy={4:.3f}")
-                self.myLogger.debug(msg_promise.format(
-                    f_benefit, f_amount, order_id, f_sell, f_buy))
-
-                line_msg = "売り注文(損切)！ 損失：{0:.3f}円 x {1:.0f}XRP ID：{2}"
-                self.line.notify_line_stamp(line_msg.format(
-                    f_benefit, f_amount, order_id), "1", "104")
-                self.myLogger.debug(line_msg.format(
-                    f_benefit, f_amount, order_id))
-
-                while(self.is_fully_filled(
-                        sell_market_result, stop_loss_price)):
-                    break
-
-                sell_order_result = sell_market_result
-                continue
-
-        return buy_order_result, sell_order_result
+        self.pre_last = 0.0           # 前回処理時の現在価格
+        self.buy_result = None        # buy約定結果情報
+        self.sell_result = None       # sell約定結果情報
+        self.stop_loss_price = 0.0    # 損切価格
 
 
 # main
 if __name__ == '__main__':
-    ao = AutoOrder()
+    od = Order()
+    at = AutoTrader(od)
     line = Line()
     bitbank = Bitbank()
     count = 0
 
     try:
-        for i in range(0, ao.LOOP_COUNT_MAIN):
-            count = count + 1
+        for i in range(0, at.LOOP_COUNT_MAIN):
+            ctunt = count + 1
             total_assets = bitbank.get_total_assets()
-            ao.myLogger.info("#############################################")
+            at.myLogger.info("#############################################")
             msg = "=== 処理開始[NO.{0}] 総資産:{1}円===".format(count, total_assets)
-            ao.myLogger.info(msg)
+            at.myLogger.info(msg)
             line.notify_line(msg)
-            buy_result = ao.buy_order()                       # 買い注文処理
-            _, _ = ao.sell_order(buy_result)   # 売り注文処理
+            buy_result = at.buy_order()        # 買い注文処理
+            _, _ = at.sell_order(buy_result)   # 売り注文処理
 
             activeOrders = bitbank.get_active_orders()["orders"]
             if activeOrders != []:
-                ao.myLogger.debug("デバッグ 注文一覧 {0}".format(activeOrders))
+                at.myLogger.debug("デバッグ 注文一覧 {0}".format(activeOrders))
                 time.sleep(60)
-                ao.myLogger.debug("デバッグ ６０秒後 注文一覧 {0}".format(activeOrders))
+                at.myLogger.debug("デバッグ ６０秒後 注文一覧 {0}".format(activeOrders))
             if activeOrders != []:
                 line.notify_line_stamp("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)), "1", "422")
-                ao.myLogger.debug("売買数が合いません！！！ 注文数：{0}".format(
+                at.myLogger.debug("売買数が合いません！！！ 注文数：{0}".format(
                     len(activeOrders)))
-
                 for j, act_order in enumerate(activeOrders):
-                    ao.myLogger.debug(
+                    at.myLogger.debug(
                         "現在のオーダー一覧 :{0}:{1}".format(j, act_order))
 
                 break  # Mainループブレイク
