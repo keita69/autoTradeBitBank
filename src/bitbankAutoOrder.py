@@ -344,7 +344,7 @@ class AutoTrader:
         condition2 = last < stop_loss_price
 
         # 条件３
-        condition3 = (order.pre_last > last)
+        condition3 = (order.pre_last + 0.03 > last)
         cond_msg = "売り注文判定 [{0}][{1}][{2}] pre_last:{3:.3f} last:{4:.3f}"
         self.myLogger.debug(cond_msg.format(
             condition1, condition2, condition3, order.pre_last, last))
