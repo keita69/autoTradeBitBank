@@ -248,9 +248,10 @@ class AutoTrader:
         ema_abs_sum = df_ema_diff_short.abs().sum(axis=0).values[0]
         condition_3 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
-        msg_cond = (
-            "買注文待 last:{0:.3f} {1} EMS_SUM：{2:.3f}({3:.3f}) C[{4}][{5}][{6}] \
-            macd_5:{7} sig_5:{8}")
+        msg_cond = ("買注文待 last:{0:.3f} {1}"
+                    "EMS_SUM：{2:.3f}({3:.3f}"
+                    "C[{4}][{5}][{6}]"
+                    "macd_5:{7:.3f} sig_5:{8:.3f}")
         self.myLogger.debug(msg_cond.format(f_last, macd_status,
                                             ema_abs_sum, EMS_DIFF_THRESHOLD,
                                             condition_1,
