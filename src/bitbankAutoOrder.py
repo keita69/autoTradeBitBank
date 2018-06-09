@@ -430,7 +430,7 @@ if __name__ == '__main__':
 
     try:
         for i in range(0, at.LOOP_COUNT_MAIN):
-            ctunt = count + 1
+            count = count + 1
             total_assets = bitbank.get_total_assets()
             at.myLogger.info("#############################################")
             msg = "=== 処理開始[NO.{0}] 総資産:{1}円===".format(count, total_assets)
