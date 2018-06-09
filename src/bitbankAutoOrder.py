@@ -81,7 +81,7 @@ class AutoTrader:
         self.LOOP_COUNT_MAIN = 10
         self.AMOUNT = "1"
 
-        self.BENEFIT = 0.5  # 利益
+        self.BENEFIT = 0.05  # 利益
         self.BUY_ORDER_RANGE = 0.0
         self.BUY_CANCEL_THRESHOLD = 0.5  # 再買い注文するための閾値
         self.SELL_ORDER_RANGE = 0.1
@@ -329,29 +329,30 @@ class AutoTrader:
 
     def is_waittig_sell_order(self, order):
         """ 売り注文（成行）できない（待ち状態）か判定する
-        条件１：買い注文時の価格＋BENEFITが現在価格より小さい（まだ売れない）　または
-        条件２：現在価格より損切価格（stop loss price）が小さい（まだ売れない）　または
-        条件３：買い注文時の価格より前回のタイミングより増えている（まだ売れない）
+        条件１：買い注文時の価格＋BENEFITが現在価格より小さい（まだ売れない）　かつ
+        条件２：買い注文時の価格より前回のタイミングより増えている（まだ売れない）　または
+        条件３：現在価格より損切価格（stop loss price）が小さい（まだ売れない）
         """
         last, _, _ = self.bitbank.get_xrp_jpy_value()
 
         # 条件１
         buy_price = self.get_order_price(order.buy_result)
-        condition1 = (buy_price + self.BENEFIT < last)
+        condition1 = (buy_price + self.BENEFIT > last)
 
         # 条件２
-        stop_loss_price = self.get_stop_loss_price(order.buy_result)
-        condition2 = last < stop_loss_price
+        condition2 = (order.pre_last > last + 0.03)
 
         # 条件３
-        condition3 = (order.pre_last + 0.03 > last)
-        cond_msg = "売り注文判定 [{0}][{1}][{2}] pre_last:{3:.3f} last:{4:.3f}"
+        stop_loss_price = self.get_stop_loss_price(order.buy_result)
+        condition3 = last > stop_loss_price
+
+        cond_msg = "売り注文判定 [{0}][{1}][{2}] pre_last:{3:.3f} last:{4:.3f} bene:{5}"
         self.myLogger.debug(cond_msg.format(
-            condition1, condition2, condition3, order.pre_last, last))
+            condition1, condition2, condition3, order.pre_last, last, self.BENEFIT))
 
         order.pre_last = last
 
-        return condition1 or condition2 or condition3
+        return (condition1 and condition2) or condition3
 
     def notify_buy(self, order):
         buy_price = self.get_order_price(order.buy_result)
