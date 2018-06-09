@@ -249,7 +249,7 @@ class AutoTrader:
         condition_3 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
         msg_cond = ("買注文待 last:{0:.3f} {1}"
-                    "EMS_SUM：{2:.3f}({3:.3f}"
+                    "EMS_SUM：{2:.3f}({3:.3f})"
                     "C[{4}][{5}][{6}]"
                     "macd_5:{7:.3f} sig_5:{8:.3f}")
         self.myLogger.debug(msg_cond.format(f_last, macd_status,
@@ -345,9 +345,9 @@ class AutoTrader:
 
         # 条件３
         condition3 = (order.pre_last > last)
-        cond_msg = "売り注文判定 [{0}][{1}][{2}]"
+        cond_msg = "売り注文判定 [{0}][{1}][{2}] pre_last:{3:.3f} last:{4:.3f}"
         self.myLogger.debug(cond_msg.format(
-            condition1, condition2, condition3))
+            condition1, condition2, condition3, order.pre_last, last))
 
         order.pre_last = last
 
