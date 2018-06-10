@@ -346,7 +346,8 @@ class AutoTrader:
         stop_loss_price = self.get_stop_loss_price(order.buy_result)
         condition3 = last > stop_loss_price
 
-        cond_msg = "売り注文判定 [{0}][{1}][{2}] pre:{3:.3f} last:{4:.3f} bene:{5}"
+        cond_msg = ("売り注文判定 C([{0}]and[{1}])or[{2}] "
+                    "pre:{3:.3f} last:{4:.3f} bene:{5}")
         self.myLogger.debug(cond_msg.format(
             condition1, condition2, condition3,
             order.pre_last, last, self.BENEFIT))
@@ -367,17 +368,22 @@ class AutoTrader:
         sell_price = self.get_order_price(order.sell_result)
         sell_order_id = order.sell_result["order_id"]
         benefit = sell_price - buy_price
+        total_assets = self.bitbank.get_total_assets()
 
         if benefit > 0:
             # 利益
-            self.line.notify_line_stamp(("【利益】{0:.3f}円 売価格 {1:.3f}円 ID：{2}")
+            self.line.notify_line_stamp(("【利益】{0:.3f}円 総資産 {1}円 "
+                                         "売価格 {2:.3f}円 ID：{3}")
                                         .format(benefit,
+                                                total_assets,
                                                 sell_price,
                                                 sell_order_id), "1", "10")
         else:
             # 損切
-            self.line.notify_line_stamp(("【損切】{0:.3f}円 売価格 {1:.3f}円 ID：{2}")
+            self.line.notify_line_stamp(("【損切】{0:.3f}円 総資産 {1}円 "
+                                         "売価格 {2:.3f}円 ID：{3}")
                                         .format(benefit,
+                                                total_assets,
                                                 sell_price,
                                                 sell_order_id), "1", "104")
 
