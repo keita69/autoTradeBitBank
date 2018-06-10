@@ -22,6 +22,9 @@ class MyLogger:
     def __init__(self, name):
         """ コンストラクタ """
         # 参考：http://joemphilips.com/post/python_logging/
+        if hasattr(self, "logger"):
+            return
+
         self.logger = getLogger(name)
         self.logger.setLevel(DEBUG)
         formatter = logging.Formatter(

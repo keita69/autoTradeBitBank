@@ -18,7 +18,7 @@ class Bitbank:
         self.check_env()
         self.pubApi = python_bitbankcc.public()
         self.prvApi = python_bitbankcc.private(self.api_key, self.api_secret)
-        self.myLogger = MyLogger(__name__)
+        self.myLogger = MyLogger("Bitbank")
 
     def check_env(self):
         """ 環境変数のチェック """
@@ -346,9 +346,10 @@ class AutoTrader:
         stop_loss_price = self.get_stop_loss_price(order.buy_result)
         condition3 = last > stop_loss_price
 
-        cond_msg = "売り注文判定 [{0}][{1}][{2}] pre_last:{3:.3f} last:{4:.3f} bene:{5}"
+        cond_msg = "売り注文判定 [{0}][{1}][{2}] pre:{3:.3f} last:{4:.3f} bene:{5}"
         self.myLogger.debug(cond_msg.format(
-            condition1, condition2, condition3, order.pre_last, last, self.BENEFIT))
+            condition1, condition2, condition3,
+            order.pre_last, last, self.BENEFIT))
 
         order.pre_last = last
 
