@@ -348,7 +348,7 @@ class AutoTrader:
         condition1 = (buy_price + self.BENEFIT > last)
 
         # 条件２
-        condition2 = (order.pre_last > last + 0.03)
+        condition2 = (order.pre_last < last + 0.05)
 
         # 条件３
         stop_loss_price = self.get_stop_loss_price(order.buy_result)
@@ -356,13 +356,13 @@ class AutoTrader:
 
         # 条件４
         rci = self.mtau.get_rci("1min")
-        condition4 = rci > 90
+        condition4 = rci < 90
 
-        cond_msg = ("売り注文判定 C([{0}]or[{1}])or[{2}]or[{3}] "
-                    "pre:{4:.3f} last:{5:.3f} bene:{6}")
+        cond_msg = ("売り注文判定 C([{0}]or[{1}])or[{2}]or[{3}](rci:{4}%) "
+                    "pre:{5:.3f} last:{6:.3f} bene:{7}")
         self.myLogger.debug(cond_msg.format(
             condition1, condition2, condition3, condition4,
-            order.pre_last, last, self.BENEFIT))
+            rci, order.pre_last, last, self.BENEFIT))
 
         order.pre_last = last
 
