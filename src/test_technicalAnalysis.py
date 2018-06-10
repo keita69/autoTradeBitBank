@@ -64,3 +64,11 @@ def test_get_candlestick_range():
     mtau = MyTechnicalAnalysisUtil()
     df = mtau.get_candlestick_range("1min", start, end)
     print(df)
+
+
+def test_get_rci():
+    mtau = MyTechnicalAnalysisUtil()
+    rci = mtau.get_rci("1min")
+    print(rci)
+    assert rci >= 0
+    assert rci <= 100

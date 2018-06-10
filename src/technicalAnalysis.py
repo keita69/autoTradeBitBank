@@ -3,6 +3,7 @@ from enum import Enum
 from datetime import datetime, timedelta
 
 import pandas as pd
+import numpy as np
 import python_bitbankcc
 from myUtil import MyLogger
 
@@ -210,3 +211,42 @@ class MyTechnicalAnalysisUtil:
         df_rsi = 100.0 - (100.0 / (1.0 + df_rs))
 
         return df_rsi[-1:].values.tolist()[0]  # 最新のRSIを返却（最終行）
+
+    def get_rci(self, candle_type):
+        """ RCI：RCIとは“Rank Correlation Index”の略です。日本語でいうと「順位相関係数」となります。
+            日付（時間）と価格それぞれに順位をつけることによって、両者にどれだけの相関関係があるのかを計算し、
+            相場のトレンドとその勢い、過熱感を知ることができます。
+            ピーク値で反転しやすい。90 % を超えると売りトレンドになりやすい(自論)。
+        計算式：RCI = ( 1 – 6y / ( n × ( n**2 – 1 ) ) ) × 100
+                a = 時間の順位
+                b = レートの順位
+                y = (a-b)**2 の合計
+                n : 基本は 9
+        参考
+        https://kabu.com/investment/guide/technical/14.html
+        """
+        n = 9
+
+        now = time.time()
+        now_utc = datetime.utcfromtimestamp(now)
+        today = now_utc.strftime('%Y%m%d')
+
+        n_days_ago_utc = now_utc - timedelta(days=n)
+        n_days_ago = n_days_ago_utc.strftime('%Y%m%d')
+
+        df = self.get_candlestick_range(candle_type, n_days_ago, today).tail(n)
+
+        df["a"] = np.arange(1, len(df)+1)
+
+        df = df.sort_values("close", ascending=False)  # 降順
+        df["b"] = np.arange(1, len(df)+1)
+
+        df["a-b"] = df["a"] - df["b"]
+        df["(a-b)**2"] = df["a-b"]**2
+
+        y = df["(a-b)**2"].sum()
+
+        rci = (1 - 6*y / (n * (n**2 - 1))) * 100
+
+        self.myLogger.debug("df_rci:{0}".format(df))
+        return rci
