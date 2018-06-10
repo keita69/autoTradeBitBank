@@ -336,7 +336,7 @@ class AutoTrader:
 
     def is_waittig_sell_order(self, order):
         """ 売り注文（成行）できない（待ち状態）か判定する
-        条件１：買い注文時の価格＋BENEFITが現在価格より小さい（まだ売れない）　かつ
+        条件１：買い注文時の価格＋BENEFITが現在価格より小さい（まだ売れない） または
         条件２：買い注文時の価格より前回のタイミングより増えている（まだ売れない）　または
         条件３：現在価格より損切価格（stop loss price）が小さい（まだ売れない）
         """
@@ -353,7 +353,7 @@ class AutoTrader:
         stop_loss_price = self.get_stop_loss_price(order.buy_result)
         condition3 = last > stop_loss_price
 
-        cond_msg = ("売り注文判定 C([{0}]and[{1}])or[{2}] "
+        cond_msg = ("売り注文判定 C([{0}]or[{1}])or[{2}] "
                     "pre:{3:.3f} last:{4:.3f} bene:{5}")
         self.myLogger.debug(cond_msg.format(
             condition1, condition2, condition3,
@@ -361,7 +361,7 @@ class AutoTrader:
 
         order.pre_last = last
 
-        return (condition1 and condition2) or condition3
+        return (condition1 or condition2) or condition3
 
     def notify_buy(self, order):
         buy_price = self.get_order_price(order.buy_result)
