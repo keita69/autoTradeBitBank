@@ -70,5 +70,5 @@ def test_get_rci():
     mtau = MyTechnicalAnalysisUtil()
     rci = mtau.get_rci("1min")
     print(rci)
-    assert rci >= 0
+    assert rci >= -100
     assert rci <= 100

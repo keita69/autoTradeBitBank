@@ -328,7 +328,7 @@ class AutoTrader:
         条件１：買い注文時の価格＋BENEFITが現在価格より小さい（まだ売れない） かつ
         条件２：買い注文時の価格より前回のタイミングより 利益価格の50 % 増えている（まだ売れない）　かつ
         条件３：現在価格より損切価格（stop loss price）が小さい（まだ売れない） かつ
-        条件４：RCIが 90 % より小さい場合はまだうれない
+        条件４：RCIが 90 % より小さい場合はまだ売れない
         """
         last, _, _ = self.bitbank.get_xrp_jpy_value()
 
@@ -348,10 +348,12 @@ class AutoTrader:
         rci = self.mtau.get_rci("1min")
         condition4 = rci < 90
 
-        cond_msg = ("売判定 C1[{0}]({1:.3f}円)C2[{2}]C3[{3}]C4[{4}](rci:{5:.3f}%) "
-                    "pre:{6:.3f} last:{7:.3f} ")
+        cond_msg = ("売判定 C1[{0}]({1:.3f}→{2:.3f}円) "
+                    "C2[{3}] C3[{4}] C4[{5}](rci:{6:.3f}%) "
+                    "pre:{7:.3f} last:{8:.3f} ")
         self.myLogger.debug(cond_msg.format(
-            condition1, bene_p, condition2, condition3, condition4,
+            condition1, buy_price, bene_p,
+            condition2, condition3, condition4,
             rci, order.pre_last, last))
 
         order.pre_last = last
