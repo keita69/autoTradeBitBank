@@ -348,7 +348,7 @@ class AutoTrader:
         rci = self.mtau.get_rci("1min")
         condition4 = rci < 90
 
-        cond_msg = ("売判定 C1[{0}](bene:{1:.3f})C2[{2}]C3[{3}]C4[{4}](rci:{5:.3f}%) "
+        cond_msg = ("売判定 C1[{0}]({1:.3f}円)C2[{2}]C3[{3}]C4[{4}](rci:{5:.3f}%) "
                     "pre:{6:.3f} last:{7:.3f} ")
         self.myLogger.debug(cond_msg.format(
             condition1, bene_p, condition2, condition3, condition4,

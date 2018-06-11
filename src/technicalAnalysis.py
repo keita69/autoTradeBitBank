@@ -236,6 +236,7 @@ class MyTechnicalAnalysisUtil:
 
         df = self.get_candlestick_range(candle_type, n_days_ago, today).tail(n)
 
+        df = df.sort_values("time", ascending=False)  # 降順
         df["a"] = np.arange(1, len(df)+1)
 
         df = df.sort_values("close", ascending=False)  # 降順
@@ -248,5 +249,5 @@ class MyTechnicalAnalysisUtil:
 
         rci = (1 - 6*y / (n * (n**2 - 1))) * 100
 
-        self.myLogger.debug("df_rci:{0}".format(df))
+        self.myLogger.debug("df_rci:{0}　y:{1}".format(df, y))
         return rci
