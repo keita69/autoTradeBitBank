@@ -325,10 +325,10 @@ class AutoTrader:
 
     def is_waittig_sell_order(self, order):
         """ 売り注文（成行）できない（待ち状態）か判定する
-        条件１：買い注文時の価格＋BENEFITが現在価格より小さい（まだ売れない） または
-        条件２：買い注文時の価格より前回のタイミングより 利益価格の50 % 増えている（まだ売れない）　または
-        条件３：現在価格より損切価格（stop loss price）が小さい（まだ売れない） または
-        条件４：RCIが 90 % 以上の場合は売る
+        条件１：買い注文時の価格＋BENEFITが現在価格より小さい（まだ売れない） かつ
+        条件２：買い注文時の価格より前回のタイミングより 利益価格の50 % 増えている（まだ売れない）　かつ
+        条件３：現在価格より損切価格（stop loss price）が小さい（まだ売れない） かつ
+        条件４：RCIが 90 % より小さい場合はまだうれない
         """
         last, _, _ = self.bitbank.get_xrp_jpy_value()
 
@@ -356,7 +356,7 @@ class AutoTrader:
 
         order.pre_last = last
 
-        return condition1 or condition2 or condition3 or condition4
+        return condition1 and condition2 and condition3 and condition4
 
     def notify_buy(self, order):
         buy_price = self.get_order_price(order.buy_result)
