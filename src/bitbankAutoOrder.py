@@ -219,9 +219,7 @@ class AutoTrader:
         条件(condition)：
             1. 1min MACDクロスがゴールデンクロスの場合　かつ
             2. 1min MACDが負　かつ
-            3. (5min MACD - シグナル) が正の場合　かつ
-               シグナルをMACDが下から上へ抜けた時＝上昇トレンドが始まるよーー！＝買いシグナル
-            4. EMSクロスdiffの絶対値の総和がEMS_DIFF_THRESHOLD以上
+            3. EMSクロスdiffの絶対値の総和がEMS_DIFF_THRESHOLD以上
         """
 
         last, _, _ = self.bitbank.get_xrp_jpy_value()
@@ -237,13 +235,6 @@ class AutoTrader:
         condition_2 = macd_1 < 0
 
         # 条件3
-        df_macd_5 = self.mtau.get_macd("5min")
-        # self.myLogger.debug("5min macd {0}".format(df_macd_5))
-        macd_5 = df_macd_5.iloc[-1]["macd"]
-        sig_5 = df_macd_5.iloc[-1]["signal"]
-        condition_3 = (macd_5 > sig_5)
-
-        # 条件4
         n_short = 9
         n_long = 26
         EMS_DIFF_THRESHOLD = 0.1
@@ -252,22 +243,20 @@ class AutoTrader:
             df_ema["ema_short"] - df_ema["ema_long"], columns=["diff"])
         df_ema_diff_short = df_ema_diff.tail(n_short)
         ema_abs_sum = df_ema_diff_short.abs().sum(axis=0).values[0]
-        condition_4 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
+        condition_3 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
         msg_cond = ("買待 last:{0:.3f} {1} "
                     "EMS_SUM：{2:.3f}({3:.3f}) "
-                    "C1[{4}]C2[{5}]C3[{6}]C4[{7}] "
-                    "macd_5:{8:.3f} sig_5:{9:.3f}")
+                    "C1[{4}]C2[{5}]C3[{6}] "
+                    "macd_1:{7:.3f}")
         self.myLogger.debug(msg_cond.format(f_last, macd_status,
                                             ema_abs_sum, EMS_DIFF_THRESHOLD,
                                             condition_1,
                                             condition_2,
                                             condition_3,
-                                            condition_4,
-                                            macd_5,
-                                            sig_5))
+                                            macd_1))
 
-        if condition_1 and condition_2 and condition_3 and condition_4:
+        if condition_1 and condition_2 and condition_3:
             return True
 
         return False
