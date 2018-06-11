@@ -154,10 +154,10 @@ class MyTechnicalAnalysisUtil:
 
         # self.myLogger.debug(
         #    "\n======== macd_head =======\n\n {0}".format(mhd))
-        condition_1 = (mhd["diff"].values[0] <= -0.01) and (
-            mhd["diff"].values[1] > -0.01)  # 買いシグナル
-        condition_2 = (mhd["diff"].values[0] >= 0.01) and (
-            mhd["diff"].values[1] < 0.01)  # 売りシグナル
+        condition_1 = (mhd["diff"].values[0] <= -0.001) and (
+            mhd["diff"].values[1] > -0.001)  # 買いシグナル
+        condition_2 = (mhd["diff"].values[0] >= 0.001) and (
+            mhd["diff"].values[1] < 0.001)  # 売りシグナル
 
         status = MacdCross.OTHER
         if condition_1:
