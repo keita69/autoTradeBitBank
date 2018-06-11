@@ -148,3 +148,25 @@ def test_is_stop_loss():
     od = Order()
     ao = AutoTrader(od)
     assert ao.is_stop_loss(sell_order_result) is False
+
+
+def test_is_waittig_sell_order():
+    sell_order_result = {
+        "order_id": 43763954,
+        "pair": "xrp_jpy",
+        "side": "sell",
+        "type": "market",
+        "price": "10000",
+        "start_amount": "1.000000",
+        "remaining_amount": "0.000000",
+        "executed_amount": "1.000000",
+        "average_price": "0.1270",
+        "ordered_at": 1527856987081,
+        "executed_at": 1527856988273,
+        "status": "FULLY_FILLED"
+    }
+    od = Order()
+    od.buy_result = sell_order_result
+    od.sell_result = sell_order_result
+    ao = AutoTrader(od)
+    ao.is_waittig_sell_order(od)

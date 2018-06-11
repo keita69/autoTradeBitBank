@@ -391,9 +391,12 @@ class AutoTrader:
     def sell_order(self, buy_order_result):
         """ 売り注文処理 """
 
-        while self.is_waittig_sell_order(self.order):
+        while True:
             time.sleep(self.POLLING_SEC_SELL)
-            break
+            if self.is_waittig_sell_order(self.order):
+                continue
+            else:
+                break
 
         sell_order_info = self.get_sell_order_info()
         sell_order_value = self.bitbank.prvApi.order(
