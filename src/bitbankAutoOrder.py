@@ -81,10 +81,10 @@ class AutoTrader:
         self.LOOP_COUNT_MAIN = 10
         self.AMOUNT = "1"
 
-        self.BENEFIT = 0.1  # 利益
+        self.BENEFIT = 0.97  # 利益
         self.BUY_ORDER_RANGE = 0.0
         self.BUY_CANCEL_THRESHOLD = 0.5  # 再買い注文するための閾値
-        self.SELL_ORDER_RANGE = 0.1
+        self.SELL_ORDER_RANGE = 0.07
         self.POLLING_SEC_MAIN = 15
         self.POLLING_SEC_BUY = 0.1
         self.POLLING_SEC_SELL = 0.1
