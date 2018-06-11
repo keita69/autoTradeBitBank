@@ -254,9 +254,9 @@ class AutoTrader:
         ema_abs_sum = df_ema_diff_short.abs().sum(axis=0).values[0]
         condition_4 = (ema_abs_sum > EMS_DIFF_THRESHOLD)
 
-        msg_cond = ("買注文待 last:{0:.3f} {1}"
-                    "EMS_SUM：{2:.3f}({3:.3f})"
-                    "C[{4}][{5}][{6}][{7}]"
+        msg_cond = ("買待 last:{0:.3f} {1} "
+                    "EMS_SUM：{2:.3f}({3:.3f}) "
+                    "C1[{4}]C2[{5}]C3[{6}]C4[{7}] "
                     "macd_5:{8:.3f} sig_5:{9:.3f}")
         self.myLogger.debug(msg_cond.format(f_last, macd_status,
                                             ema_abs_sum, EMS_DIFF_THRESHOLD,
@@ -358,7 +358,7 @@ class AutoTrader:
         rci = self.mtau.get_rci("1min")
         condition4 = rci < 90
 
-        cond_msg = ("売り注文判定 C([{0}]or[{1}])or[{2}]or[{3}](rci:{4}%) "
+        cond_msg = ("売判定 C1[{0}]C2[{1}]C3[{2}]C4[{3}](rci:{4}%) "
                     "pre:{5:.3f} last:{6:.3f} bene:{7}")
         self.myLogger.debug(cond_msg.format(
             condition1, condition2, condition3, condition4,
