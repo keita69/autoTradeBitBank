@@ -81,7 +81,7 @@ class AutoTrader:
         self.LOOP_COUNT_MAIN = 10
         self.AMOUNT = "1"
 
-        self.BENEFIT = 0.05  # 利益
+        self.BENEFIT = 0.1  # 利益
         self.BUY_ORDER_RANGE = 0.0
         self.BUY_CANCEL_THRESHOLD = 0.5  # 再買い注文するための閾値
         self.SELL_ORDER_RANGE = 0.1
@@ -337,7 +337,7 @@ class AutoTrader:
     def is_waittig_sell_order(self, order):
         """ 売り注文（成行）できない（待ち状態）か判定する
         条件１：買い注文時の価格＋BENEFITが現在価格より小さい（まだ売れない） または
-        条件２：買い注文時の価格より前回のタイミングより増えている（まだ売れない）　または
+        条件２：買い注文時の価格より前回のタイミングより 利益価格の50 % 増えている（まだ売れない）　または
         条件３：現在価格より損切価格（stop loss price）が小さい（まだ売れない） または
         条件４：RCIが 90 % 以上の場合は売る
         """
@@ -348,7 +348,7 @@ class AutoTrader:
         condition1 = (buy_price + self.BENEFIT > last)
 
         # 条件２
-        condition2 = (order.pre_last < last + 0.05)
+        condition2 = (order.pre_last < last + self.BENEFIT * 0.5)
 
         # 条件３
         stop_loss_price = self.get_stop_loss_price(order.buy_result)
@@ -380,14 +380,14 @@ class AutoTrader:
         sell_price = self.get_order_price(order.sell_result)
         sell_order_id = order.sell_result["order_id"]
         benefit = sell_price - buy_price
-        total_assets = self.bitbank.get_total_assets()
+        total = self.bitbank.get_total_assets()
 
         if benefit > 0:
             # 利益
             self.line.notify_line_stamp(("【利益】{0:.3f}円 総資産 {1}円 "
                                          "売価格 {2:.3f}円 ID：{3}")
                                         .format(benefit,
-                                                total_assets,
+                                                total,
                                                 sell_price,
                                                 sell_order_id), "1", "10")
         else:
@@ -395,7 +395,7 @@ class AutoTrader:
             self.line.notify_line_stamp(("【損切】{0:.3f}円 総資産 {1}円 "
                                          "売価格 {2:.3f}円 ID：{3}")
                                         .format(benefit,
-                                                total_assets,
+                                                total,
                                                 sell_price,
                                                 sell_order_id), "1", "104")
 
