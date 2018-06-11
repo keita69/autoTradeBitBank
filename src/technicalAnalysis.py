@@ -231,10 +231,10 @@ class MyTechnicalAnalysisUtil:
         now_utc = datetime.utcfromtimestamp(now)
         today = now_utc.strftime('%Y%m%d')
 
-        n_days_ago_utc = now_utc - timedelta(days=n)
-        n_days_ago = n_days_ago_utc.strftime('%Y%m%d')
+        yesterday_utc = now_utc - timedelta(days=n)
+        yesterday = yesterday_utc.strftime('%Y%m%d')
 
-        df = self.get_candlestick_range(candle_type, n_days_ago, today).tail(n)
+        df = self.get_candlestick_range(candle_type, yesterday, today).tail(n)
 
         df = df.sort_values("time", ascending=False)  # 降順
         df["a"] = np.arange(1, len(df)+1)
