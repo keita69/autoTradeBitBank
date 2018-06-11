@@ -334,7 +334,8 @@ class AutoTrader:
 
         # 条件１
         buy_price = self.get_order_price(order.buy_result)
-        condition1 = (buy_price + self.BENEFIT > last)
+        bene_p = buy_price + self.BENEFIT
+        condition1 = (bene_p > last)
 
         # 条件２
         condition2 = (order.pre_last < last + self.BENEFIT * 0.5)
@@ -347,11 +348,11 @@ class AutoTrader:
         rci = self.mtau.get_rci("1min")
         condition4 = rci < 90
 
-        cond_msg = ("売判定 C1[{0}]C2[{1}]C3[{2}]C4[{3}](rci:{4}%) "
-                    "pre:{5:.3f} last:{6:.3f} bene:{7}")
+        cond_msg = ("売判定 C1[{0}](bene:{1:.3f})C2[{2}]C3[{3}]C4[{4}](rci:{5:.3f}%) "
+                    "pre:{6:.3f} last:{7:.3f} ")
         self.myLogger.debug(cond_msg.format(
-            condition1, condition2, condition3, condition4,
-            rci, order.pre_last, last, self.BENEFIT))
+            condition1, bene_p, condition2, condition3, condition4,
+            rci, order.pre_last, last))
 
         order.pre_last = last
 
