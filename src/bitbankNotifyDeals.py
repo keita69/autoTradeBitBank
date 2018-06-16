@@ -31,7 +31,7 @@ class Advisor:
             candle_type_list = ("1min", "5min", "15min", "30min", "1hour")
 
             for candle_type in candle_type_list:
-                rsi = mtau.get_rsi(9, candle_type)
+                rsi = mtau.get_rsi(14, candle_type)
                 if rsi < 20:
                     msg_rsi = "【買い時】RSIが {0} で {1} ％です"
                     self.line.notify_line_stamp(
