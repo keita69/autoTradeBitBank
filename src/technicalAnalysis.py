@@ -68,6 +68,9 @@ class MyTechnicalAnalysisUtil:
 
             crnt_ymd = crnt_ymd - timedelta(days=1)
 
+        idx = pd.to_datetime(df['time']/1000, unit='s')
+        df.index = idx
+
         return df
 
     def get_candlestick(self, candle_type):
@@ -199,6 +202,8 @@ class MyTechnicalAnalysisUtil:
         df_close = df_ohlcv["close"].astype('float')
         df_diff = df_close.diff()
 
+        # 最初のレコードが欠損してしまうので落としてあげる
+        df_diff = df_diff[1:]
         # 値上がり幅、値下がり幅をシリーズへ切り分け
         up, down = df_diff.copy(), df_diff.copy()
         up[up < 0] = 0
@@ -251,3 +256,10 @@ class MyTechnicalAnalysisUtil:
 
         self.myLogger.debug("df_rci:{0}　y:{1}".format(df, y))
         return rci
+
+
+if __name__ == '__main__':
+    t = MyTechnicalAnalysisUtil()
+    df_test = t.get_candlestick_range("1hour", "20180616", "20180616")
+    print(df_test)
+    print(t.get_rsi(14, "1hour"))
