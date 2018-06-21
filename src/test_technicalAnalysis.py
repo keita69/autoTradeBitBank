@@ -37,7 +37,7 @@ def test_patch_get_xrp_jpy_value(monkeypatch):
 
 def test_get_rsi():
     mtau = MyTechnicalAnalysisUtil()
-    rsi = mtau.get_rsi(mtau.RSI_N, "1min")
+    rsi = mtau.get_rsi("1min")
     assert rsi >= 0
     assert rsi <= 100
 

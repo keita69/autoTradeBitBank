@@ -183,7 +183,7 @@ class AutoTrader:
 
         # 条件2
         RSI_THRESHOLD = 60
-        f_rsi = float(self.mtau.get_rsi(9, "1min"))
+        f_rsi = float(self.mtau.get_rsi("1min"))
         over_rsi = (f_rsi > RSI_THRESHOLD)
         n = 0.30
         f_stop_loss_price_n = float(
@@ -391,7 +391,7 @@ class AutoTrader:
                                                 sell_price,
                                                 sell_order_id), "1", "104")
 
-    def sell_order(self, buy_order_result):
+    def sell_order(self):
         """ 売り注文処理 """
 
         while True:
@@ -452,7 +452,7 @@ if __name__ == '__main__':
             at.myLogger.info(msg)
             line.notify_line(msg)
             buy_result = at.buy_order()        # 買い注文処理
-            at.sell_order(buy_result)   # 売り注文処理
+            at.sell_order()   # 売り注文処理
 
             activeOrders = bitbank.get_active_orders()["orders"]
             if activeOrders != []:

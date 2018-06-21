@@ -1,7 +1,6 @@
 import os
 import logging
 from logging import getLogger, StreamHandler, DEBUG
-from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime, timezone, timedelta
 
 import requests
