@@ -249,7 +249,7 @@ class MyTechnicalAnalysisUtil:
 
         return df_rsi[-1:].values.tolist()[0]  # 最新のRSIを返却（最終行）
 
-    def get_rci(self, candle_type):
+    def get_rci(self, candle_type, pair="xrp_jpy"):
         """ RCI：RCIとは“Rank Correlation Index”の略です。日本語でいうと「順位相関係数」となります。
             日付（時間）と価格それぞれに順位をつけることによって、両者にどれだけの相関関係があるのかを計算し、
             相場のトレンドとその勢い、過熱感を知ることができます。
@@ -263,15 +263,7 @@ class MyTechnicalAnalysisUtil:
         https://kabu.com/investment/guide/technical/14.html
         """
         n = 9
-
-        now = time.time()
-        now_utc = datetime.utcfromtimestamp(now)
-        today = now_utc.strftime('%Y%m%d')
-
-        yesterday_utc = now_utc - timedelta(days=n)
-        yesterday = yesterday_utc.strftime('%Y%m%d')
-
-        df = self.get_candlestick_range(candle_type, yesterday, today).tail(n)
+        df = self.get_candlestick_n(candle_type, n, pair)
 
         df = df.sort_values("time", ascending=False)  # 降順
         df["a"] = np.arange(1, len(df)+1)
