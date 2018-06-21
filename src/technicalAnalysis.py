@@ -37,7 +37,7 @@ class MyTechnicalAnalysisUtil:
         self.myLogger = MyLogger("MyTechnicalAnalysisUtil")
         self.RSI_N = 14
 
-    def get_candlestick_n(self, candle_type, n: int):
+    def get_candlestick_n(self, candle_type, n: int, pair="xrp_jpy"):
         now = time.time()
         now_utc = datetime.utcfromtimestamp(now)
 
@@ -47,7 +47,7 @@ class MyTechnicalAnalysisUtil:
             ohlcv = []
             while len(ohlcv) <= n:
                 candlestick_tmp = self.pubApi.get_candlestick(
-                    "xrp_jpy", candle_type, yyyymmdd)
+                    pair, candle_type, yyyymmdd)
                 ohlcv_tmp = candlestick_tmp["candlestick"][0]["ohlcv"]
                 ohlcv = ohlcv + ohlcv_tmp
         except ConnectionResetError as cre:
@@ -222,14 +222,14 @@ class MyTechnicalAnalysisUtil:
 
         return df_ema
 
-    def get_rsi(self, candle_type):
+    def get_rsi(self, candle_type, pair="xrp_jpy"):
         """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
         計算式：RSI＝直近N日間の上げ幅合計の絶対値/（直近N日間の上げ幅合計の絶対値＋下げ幅合計の絶対値）×100
         参考
         http://www.algo-fx-blog.com/rsi-python-ml-features/
         """
         n = 14
-        df_ohlcv = self.get_candlestick_n(candle_type, n)
+        df_ohlcv = self.get_candlestick_n(candle_type, n, pair)
         df_close = df_ohlcv["close"].astype('float')
         df_diff = df_close.diff()
 

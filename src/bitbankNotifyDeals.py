@@ -27,15 +27,17 @@ class Advisor:
         mtau = MyTechnicalAnalysisUtil()
 
         while True:
+            pair_list = ("btc_jpy", "xrp_jpy")
             # RSI が 20 % 以下の場合にLINE通知する
-            candle_type_list = ("1min", "5min", "15min", "30min", "1hour")
+            candle_type_list = ("5min", "15min", "30min", "1hour")
 
-            for candle_type in candle_type_list:
-                rsi = mtau.get_rsi(candle_type)
-                if rsi < 20:
-                    msg_rsi = "【買い時】RSIが {0} で {1} ％です"
-                    self.line.notify_line_stamp(
-                        msg_rsi.format(candle_type, rsi), "2", "514")
+            for pair in pair_list:
+                for candle_type in candle_type_list:
+                    rsi = mtau.get_rsi(candle_type, pair)
+                    if rsi < 20:
+                        msg_rsi = "【{0} 買い時】RSIが {1} で {2} ％です"
+                        self.line.notify_line_stamp(
+                            msg_rsi.format(pair, candle_type, rsi), "2", "514")
 
             time.sleep(1)
 
