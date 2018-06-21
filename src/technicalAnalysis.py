@@ -37,6 +37,36 @@ class MyTechnicalAnalysisUtil:
         self.myLogger = MyLogger("MyTechnicalAnalysisUtil")
         self.RSI_N = 14
 
+    def get_candlestick_n(self, candle_type, n: int):
+        now = time.time()
+        now_utc = datetime.utcfromtimestamp(now)
+
+        yyyymmdd = now_utc.strftime('%Y%m%d')
+
+        try:
+            ohlcv = []
+            while len(ohlcv) <= n:
+                candlestick_tmp = self.pubApi.get_candlestick(
+                    "xrp_jpy", candle_type, yyyymmdd)
+                ohlcv_tmp = candlestick_tmp["candlestick"][0]["ohlcv"]
+                ohlcv = ohlcv + ohlcv_tmp
+        except ConnectionResetError as cre:
+            self.myLogger.exception("get_canlestickでエラーが発生", cre)
+            raise cre
+
+        df_ohlcv = pd.DataFrame(ohlcv,
+                                columns=["open",    # 始値
+                                         "hight",   # 高値
+                                         "low",     # 安値
+                                         "close",   # 終値
+                                         "amount",  # 出来高
+                                         "time"])   # UnixTime
+
+        idx = pd.to_datetime(df_ohlcv['time']/1000, unit='s')
+        df_ohlcv.index = idx
+
+        return df_ohlcv
+
     def get_candlestick_range(self, candle_type, s_yyyymmdd, e_yyyymmdd):
         """ チャート情報（ロウソク）をstart(yyyymmdd)-end(yyyymmdd)期間分取得する
         """
@@ -192,18 +222,20 @@ class MyTechnicalAnalysisUtil:
 
         return df_ema
 
-    def get_rsi(self, n: int, candle_type):
+    def get_rsi(self, candle_type):
         """ RSI：50%を中心にして上下に警戒区域を設け、70%以上を買われすぎ、30%以下を売られすぎと判断します。
         計算式：RSI＝直近N日間の上げ幅合計の絶対値/（直近N日間の上げ幅合計の絶対値＋下げ幅合計の絶対値）×100
         参考
         http://www.algo-fx-blog.com/rsi-python-ml-features/
         """
-        df_ohlcv = self.get_candlestick(candle_type)
+        n = 14
+        df_ohlcv = self.get_candlestick_n(candle_type, n)
         df_close = df_ohlcv["close"].astype('float')
         df_diff = df_close.diff()
 
         # 最初のレコードが欠損してしまうので落としてあげる
         df_diff = df_diff[1:]
+
         # 値上がり幅、値下がり幅をシリーズへ切り分け
         up, down = df_diff.copy(), df_diff.copy()
         up[up < 0] = 0
@@ -254,12 +286,13 @@ class MyTechnicalAnalysisUtil:
 
         rci = (1 - 6*y / (n * (n**2 - 1))) * 100
 
-        self.myLogger.debug("df_rci:{0}　y:{1}".format(df, y))
+        # self.myLogger.debug("df_rci:{0}　y:{1}".format(df, y))
         return rci
 
 
 if __name__ == '__main__':
     t = MyTechnicalAnalysisUtil()
-    df_test = t.get_candlestick_range("1hour", "20180616", "20180616")
-    print(df_test)
-    print(t.get_rsi(14, "1hour"))
+    for i in range(10):
+        print(t.get_rsi("1hour"))
+        time.sleep(5)
+        i = i + 1
