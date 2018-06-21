@@ -43,8 +43,7 @@ class Advisor:
                                 candle_type,
                                 rsi,
                                 rci), "2", "514")
-
-            time.sleep(1)
+                    time.sleep(1)
 
 
 # main

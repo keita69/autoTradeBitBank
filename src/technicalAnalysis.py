@@ -64,6 +64,7 @@ class MyTechnicalAnalysisUtil:
 
         idx = pd.to_datetime(df_ohlcv['time']/1000, unit='s')
         df_ohlcv.index = idx
+        df_ohlcv.name = "utc"
 
         return df_ohlcv
 
