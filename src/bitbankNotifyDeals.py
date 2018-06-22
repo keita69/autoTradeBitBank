@@ -13,7 +13,7 @@ class Advisor:
         self.api_secret = os.getenv("BITBANK_API_SECRET")
         self.check_env()
         self.line = Line()
-        self.logger = MyLogger(__name__)
+        self.logger = MyLogger("bitbankNotifyDeals")
 
     def check_env(self):
         """ 環境変数のチェック """
@@ -46,6 +46,7 @@ class Advisor:
                                 rci), "2", "514")
                         self.logger.debug(
                             msg_rsi.format(pair, candle_type, rsi))
+                        print(msg_rsi.format(pair, candle_type, rsi))
 
                     time.sleep(1)
 
@@ -53,7 +54,7 @@ class Advisor:
 # main
 if __name__ == '__main__':
     line = Line()
-    logger = MyLogger(__name__)
+    logger = MyLogger("bitbankNotifyDeals")
     try:
         Advisor().notify_rsi_under_20()
     except BaseException as be:
