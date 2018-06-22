@@ -35,17 +35,17 @@ class Advisor:
                 for candle_type in candle_type_list:
                     rsi = mtau.get_rsi(candle_type, pair)
                     rci = mtau.get_rci(candle_type, pair)
-                    msg_rsi = "【{0} {1} 買い時】RSI= {2:.1f} ％ RCI= {3:.1f} ％"
+                    msg_rxi = "【{0} {1} 買い時】RSI= {2:.1f} ％ RCI= {3:.1f} ％"
 
                     if rsi < 20:
                         self.line.notify_line_stamp(
-                            msg_rsi.format(
+                            msg_rxi.format(
                                 pair,
                                 candle_type,
                                 rsi,
                                 rci), "2", "514")
 
-                    print(msg_rsi.format(pair, candle_type, rsi, rci))
+                    print(msg_rxi.format(pair, candle_type, rsi, rci))
                     time.sleep(1)
 
 

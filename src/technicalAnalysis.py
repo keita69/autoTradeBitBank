@@ -229,7 +229,7 @@ class MyTechnicalAnalysisUtil:
         参考
         http://www.algo-fx-blog.com/rsi-python-ml-features/
         """
-        n = 14
+        n = 15
         df_ohlcv = self.get_candlestick_n(candle_type, n, pair)
         df_close = df_ohlcv["close"].astype('float')
         df_diff = df_close.diff()
@@ -242,10 +242,10 @@ class MyTechnicalAnalysisUtil:
         up[up < 0] = 0
         down[down > 0] = 0
 
-        up_sma_n = up.rolling(window=n, center=False).mean()  # mean:平均を計算
-        down_sma_n = down.abs().rolling(window=n, center=False).mean()
+        up_sma_14 = up.rolling(window=14, center=False).mean()  # mean:平均を計算
+        down_sma_14 = down.abs().rolling(window=14, center=False).mean()
 
-        df_rs = up_sma_n / down_sma_n
+        df_rs = up_sma_14 / down_sma_14
         df_rsi = 100.0 - (100.0 / (1.0 + df_rs))
 
         return df_rsi[-1:].values.tolist()[0]  # 最新のRSIを返却（最終行）
@@ -285,7 +285,7 @@ class MyTechnicalAnalysisUtil:
 
 if __name__ == '__main__':
     t = MyTechnicalAnalysisUtil()
-    for i in range(10):
-        print(t.get_rsi("1hour"))
+    for i in range(5):
+        print(t.get_rsi("1hour", "xrp_jpy"))
         time.sleep(5)
         i = i + 1
