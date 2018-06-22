@@ -2,7 +2,7 @@
 import os
 import time
 
-from myUtil import MyLogger, Line
+from myUtil import Line
 from technicalAnalysis import MyTechnicalAnalysisUtil
 
 
@@ -13,7 +13,6 @@ class Advisor:
         self.api_secret = os.getenv("BITBANK_API_SECRET")
         self.check_env()
         self.line = Line()
-        self.logger = MyLogger("bitbankNotifyDeals")
 
     def check_env(self):
         """ 環境変数のチェック """
@@ -36,7 +35,7 @@ class Advisor:
                 for candle_type in candle_type_list:
                     rsi = mtau.get_rsi(candle_type, pair)
                     # rci = mtau.get_rci(candle_type, pair)
-                    rci = 999
+                    rci = 9999
                     if rsi < 20:
                         msg_rsi = "【{0} {1} 買い時】RSI= {2:.3f} ％ RCI= {3:.3f} ％"
                         self.line.notify_line_stamp(
@@ -45,8 +44,6 @@ class Advisor:
                                 candle_type,
                                 rsi,
                                 rci), "2", "514")
-                        self.logger.debug(
-                            msg_rsi.format(pair, candle_type, rsi))
                         print(msg_rsi.format(pair, candle_type, rsi))
 
                     time.sleep(1)
@@ -55,12 +52,10 @@ class Advisor:
 # main
 if __name__ == '__main__':
     line = Line()
-    logger = MyLogger("bitbankNotifyDeals")
     try:
         Advisor().notify_rsi_under_20()
     except BaseException as be:
         msg = "RSI通知でエラーが発生しました！ 詳細：{0}".format(be)
-        logger.exception(msg, be)
         print(be)
         line.notify_line_stamp(msg, "1", "17")
         raise BaseException
