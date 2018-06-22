@@ -51,6 +51,7 @@ class Advisor:
 
 # main
 if __name__ == '__main__':
+    print("===== RSI通知処理開始 ======")
     line = Line()
     try:
         Advisor().notify_rsi_under_20()
