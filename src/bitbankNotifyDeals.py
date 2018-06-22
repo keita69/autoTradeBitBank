@@ -2,7 +2,7 @@
 import os
 import time
 
-from myUtil import Line
+from myUtil import MyLogger, Line
 from technicalAnalysis import MyTechnicalAnalysisUtil
 
 
@@ -13,6 +13,7 @@ class Advisor:
         self.api_secret = os.getenv("BITBANK_API_SECRET")
         self.check_env()
         self.line = Line()
+        self.logger = MyLogger(__name__)
 
     def check_env(self):
         """ 環境変数のチェック """
@@ -49,10 +50,11 @@ class Advisor:
 # main
 if __name__ == '__main__':
     line = Line()
-
+    logger = MyLogger(__name__)
     try:
         Advisor().notify_rsi_under_20()
     except BaseException as be:
-        line.notify_line_stamp(
-            "RSI通知でエラーが発生しました！ 詳細：{0}".format(be), "1", "17")
+        msg = "RSI通知でエラーが発生しました！ 詳細：{0}".format(be)
+        logger.exception(msg, be)
+        line.notify_line_stamp(msg, "1", "17")
         raise BaseException
