@@ -66,7 +66,7 @@ class MyTechnicalAnalysisUtil:
         df_ohlcv.index = idx
         df_ohlcv.index.name = "utc"
 
-        return df_ohlcv
+        return df_ohlcv.head(n)
 
     def get_candlestick_range(self, candle_type, s_yyyymmdd, e_yyyymmdd):
         """ チャート情報（ロウソク）をstart(yyyymmdd)-end(yyyymmdd)期間分取得する
@@ -254,7 +254,7 @@ class MyTechnicalAnalysisUtil:
         """ RCI：RCIとは“Rank Correlation Index”の略です。日本語でいうと「順位相関係数」となります。
             日付（時間）と価格それぞれに順位をつけることによって、両者にどれだけの相関関係があるのかを計算し、
             相場のトレンドとその勢い、過熱感を知ることができます。
-            ピーク値で反転しやすい。± 90 % を超えると売りトレンドになりやすい(自論)。
+            ピーク値で反転しやすい。± 90 % を超えるとトレンドが変わりやすい(自論)。
         計算式：RCI = ( 1 – 6y / ( n × ( n**2 – 1 ) ) ) × 100   ※ -100 < RCI < 100
                 a = 時間の順位
                 b = レートの順位
