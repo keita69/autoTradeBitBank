@@ -60,5 +60,6 @@ if __name__ == '__main__':
     except BaseException as be:
         msg = "RSI通知でエラーが発生しました！ 詳細：{0}".format(be)
         logger.exception(msg, be)
+        print(be)
         line.notify_line_stamp(msg, "1", "17")
         raise BaseException
