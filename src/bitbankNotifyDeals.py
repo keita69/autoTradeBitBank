@@ -44,6 +44,9 @@ class Advisor:
                                 candle_type,
                                 rsi,
                                 rci), "2", "514")
+                        self.logger.debug(
+                            msg_rsi.format(pair, candle_type, rsi))
+
                     time.sleep(1)
 
 
