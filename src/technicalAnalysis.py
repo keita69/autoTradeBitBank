@@ -66,7 +66,7 @@ class MyTechnicalAnalysisUtil:
         df_ohlcv.index = idx
         df_ohlcv.index.name = "utc"
 
-        return df_ohlcv.head(n)
+        return df_ohlcv.tail(n)
 
     def get_candlestick_range(self, candle_type, s_yyyymmdd, e_yyyymmdd):
         """ チャート情報（ロウソク）をstart(yyyymmdd)-end(yyyymmdd)期間分取得する
