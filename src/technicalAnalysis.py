@@ -38,6 +38,7 @@ class MyTechnicalAnalysisUtil:
         self.RSI_N = 14
 
     def get_candlestick_n(self, candle_type, n: int, pair="xrp_jpy"):
+        # TODO 最新の情報は　GET /{pair}/ticker　で取得するように修正する
         now = time.time()
         now_utc = datetime.utcfromtimestamp(now)
 
