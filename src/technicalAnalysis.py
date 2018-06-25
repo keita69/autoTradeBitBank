@@ -46,7 +46,7 @@ class MyTechnicalAnalysisUtil:
 
         try:
             ohlcv = []
-            while len(ohlcv) <= n:
+            while len(ohlcv) <= n+1:
                 candlestick_tmp = self.pubApi.get_candlestick(
                     pair, candle_type, yyyymmdd)
                 ohlcv_tmp = candlestick_tmp["candlestick"][0]["ohlcv"]
@@ -230,7 +230,7 @@ class MyTechnicalAnalysisUtil:
         参考
         http://www.algo-fx-blog.com/rsi-python-ml-features/
         """
-        n = 15
+        n = 24
         df_ohlcv = self.get_candlestick_n(candle_type, n, pair)
         df_close = df_ohlcv["close"].astype('float')
         df_diff = df_close.diff()
