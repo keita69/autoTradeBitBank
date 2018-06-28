@@ -3,6 +3,13 @@ from datetime import datetime
 import pandas as pd
 import pandas_datareader.data as web
 
+NY_DOW_SYMBOLS = ("AAPL", "AXP", "BA", "CAT", "CSCO",
+                  "CVX", "DIS", "DWDP", "GS", "HD",
+                  "IBM", "INTC", "JNJ", "JPM", "KO",
+                  "MCD", "MMM", "MRK", "MSFT", "NKE",
+                  "PFE", "PG", "TRV", "UNH", "UTX",
+                  "V", "VZ", "WBA", "WMT", "XOM")
+
 
 class Rakuten():
 
