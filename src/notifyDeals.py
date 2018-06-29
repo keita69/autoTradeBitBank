@@ -54,6 +54,9 @@ SP_100_SYMBOLS = {"AAPL", "ABBV", "ABT", "ACN", "AGN",
                   "UTX", "V", "VZ", "WBA", "WFC",
                   "WMT", "XOM"}
 
+# 結合（重複削除）
+NY_DOW_SP_SYMBOLS = NY_DOW_SYMBOLS | NASDAQ_100_SYMBOLS | SP_100_SYMBOLS
+
 
 class Rakuten():
 
@@ -83,13 +86,8 @@ df = r.get_rakuten_stocks()
 start = datetime(2018, 5, 24)
 end = datetime(2018, 6, 24)
 
-symbols = df["現地コード"].tolist()
-
-step = 75
-df_rakuten_candle = pd.DataFrame()
-for i in range(0, len(symbols), step):
-    # 扱えるリストが最大75
-    df_tmp = web.DataReader(symbols[i:i+step], 'robinhood', start, end)
-    df_rakuten_candle = df_rakuten_candle.append(df_tmp)
+symbols = set(df["現地コード"]) & NY_DOW_SP_SYMBOLS
+df_rakuten_candle = web.DataReader(list(symbols), 'morningstar', start, end)
 
 print(df_rakuten_candle)
+print(NY_DOW_SP_SYMBOLS)
