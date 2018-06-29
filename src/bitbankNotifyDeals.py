@@ -29,7 +29,7 @@ class Advisor:
         while True:
             pair_list = ("btc_jpy", "xrp_jpy")
             # RSI が 20 % 以下の場合にLINE通知する
-            candle_type_list = ("5min", "15min", "30min", "1hour")
+            candle_type_list = ("5min", "15min")
 
             for pair in pair_list:
                 for candle_type in candle_type_list:
