@@ -27,11 +27,11 @@ class Advisor:
         mtau = MyTechnicalAnalysisUtil()
 
         while True:
-            pair_list = ("btc_jpy", "xrp_jpy")
+            pair_dic = {"btc_jpy": 514, "xrp_jpy": 166}
             # RSI が 20 % 以下の場合にLINE通知する
             candle_type_list = ("5min", "15min")
 
-            for pair in pair_list:
+            for pair in pair_dic:
                 for candle_type in candle_type_list:
                     rsi = mtau.get_rsi(candle_type, pair)
                     rci = mtau.get_rci(candle_type, pair)
@@ -43,7 +43,7 @@ class Advisor:
                                 pair,
                                 candle_type,
                                 rsi,
-                                rci), "2", "514")
+                                rci), "2", pair_dic[pair])
 
                     print(msg_rxi.format(pair, candle_type, rsi, rci))
                     time.sleep(1)
