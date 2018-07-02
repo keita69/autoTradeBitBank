@@ -51,12 +51,17 @@ class Advisor:
 
 # main
 if __name__ == '__main__':
-    print("===== RSI通知処理開始 ======")
     line = Line()
-    try:
-        Advisor().notify_rsi_under_20()
-    except BaseException as be:
-        msg = "RSI通知でエラーが発生しました！ 詳細：{0}".format(be)
-        print(be)
-        line.notify_line_stamp(msg, "1", "17")
-        raise BaseException
+    retry = 0
+    while True:
+        print("===== RSI通知処理開始 ======")
+
+        try:
+            Advisor().notify_rsi_under_20()
+        except BaseException as be:
+            msg = "RSI通知でエラーが発生しました！ 詳細：{0}".format(be)
+            print(be)
+            line.notify_line_stamp(msg, "1", "17")
+            raise BaseException
+
+        retry = retry + 1
