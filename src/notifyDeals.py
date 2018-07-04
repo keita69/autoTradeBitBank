@@ -54,8 +54,18 @@ SP_100_SYMBOLS = {"AAPL", "ABBV", "ABT", "ACN", "AGN",
                   "UTX", "V", "VZ", "WBA", "WFC",
                   "WMT", "XOM"}
 
+# 高リターンランキング上位22 & 高成長のグロース株もおすすめ銘柄として要注目
+# https://america-kabu.com/2018/01/07/watch-list-on-us-stock/
+GOOD_SYMBOLS = {"PM", "MO", "ABBV", "ABT", "KO",
+                      "CL", "BMY", "PEP", "MRK", "HNZ",
+                      "CVS", "TR", "CR", "HSY", "PFE",
+                      "EQT", "GIS", "OKE", "PG", "DE",
+                      "KR", "MHP", "FB", "AMZN", "GOOG",
+                      "APPL", "MSFT"}
+
 # 結合（重複削除）
 NY_DOW_SP_SYMBOLS = NY_DOW_SYMBOLS | NASDAQ_100_SYMBOLS | SP_100_SYMBOLS
+TARGET_SYMBOLS = NY_DOW_SP_SYMBOLS & GOOD_SYMBOLS
 
 
 class Rakuten():
@@ -83,11 +93,11 @@ class Rakuten():
 r = Rakuten()
 df = r.get_rakuten_stocks()
 
-start = datetime(2018, 5, 24)
-end = datetime(2018, 6, 24)
+start = datetime(2018, 6, 21)
+end = datetime(2018, 6, 22)
 
-symbols = set(df["現地コード"]) & NY_DOW_SP_SYMBOLS
-df_rakuten_candle = web.DataReader(list(symbols), 'morningstar', start, end)
+symbols = set(df["現地コード"]) & TARGET_SYMBOLS
 
-print(df_rakuten_candle)
-print(NY_DOW_SP_SYMBOLS)
+for symbol in TARGET_SYMBOLS:
+    df_rakuten_candle = web.DataReader(symbol, 'morningstar', start, end)
+    print(df_rakuten_candle)
