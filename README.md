@@ -12,6 +12,24 @@ PEP 8は、言語の異なる要素ごとに他と異なるスタイルを推奨
 *  クラスのインスタンスメソッドは、（オブジェクトを参照する）第1仮引数の名前にselfを使う。
 *  クラスメソッドは、（クラスを参照する）第1仮引数の名前にclsを使う。
 
+## venv(バーチャル環境設定)
+### Anaconda Prompt でvenv作成
+```
+conda create -n env_zipline python=3.5
+```
+
+### git-bash Prompt
+```
+# venvを有効化
+source activate env_zipline
+```
+
+```
+# venvを無効化
+source deactivate
+```
+
+
 ## CSV取得
 ### 楽天証券 米国株式
 * curl -O https://www.trkd-asia.com/rakutensec/exportcsvus?name=&r1=on&all=on&vall=on&forwarding=na&target=0&theme=na&returns=na&head_office=na&sector=na
