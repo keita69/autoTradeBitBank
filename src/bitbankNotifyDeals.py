@@ -31,10 +31,16 @@ class Advisor:
             # RSI が 20 % 以下の場合にLINE通知する
             candle_type_list = ("5min", "15min")
 
+            pre_rsi = None
+            pre_rci = None
             for pair in pair_dic:
                 for candle_type in candle_type_list:
                     rsi = mtau.get_rsi(candle_type, pair)
                     rci = mtau.get_rci(candle_type, pair)
+
+                    if pre_rsi == rsi and pre_rci == rci:
+                        break
+
                     msg_rxi = "【{0} {1} 買い時】RSI= {2:.1f} ％ RCI= {3:.1f} ％"
 
                     if rsi < 20:
@@ -46,6 +52,8 @@ class Advisor:
                                 rci), "2", pair_dic[pair])
 
                     print(msg_rxi.format(pair, candle_type, rsi, rci))
+                    pre_rsi = rsi
+                    pre_rci = rci
                     time.sleep(1)
 
 
@@ -59,9 +67,9 @@ if __name__ == '__main__':
         try:
             Advisor().notify_rsi_under_20()
         except BaseException as be:
-            msg = "RSI通知でエラーが発生しました！ 詳細：{0}".format(be)
+            msg = "Retry:{0}, RSI通知でエラーが発生しました！ 詳細：{1}".format(be, retry)
             print(be)
             line.notify_line_stamp(msg, "1", "17")
-            raise BaseException
+            # raise BaseException
 
         retry = retry + 1
