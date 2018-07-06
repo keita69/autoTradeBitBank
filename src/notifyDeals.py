@@ -1,7 +1,10 @@
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
 
 import pandas as pd
 import pandas_datareader.data as web
+
+import technicalAnalysis
 
 NY_DOW_SYMBOLS = {"AAPL", "AXP", "BA", "CAT", "CSCO",
                   "CVX", "DIS", "DWDP", "GS", "HD",
@@ -65,18 +68,18 @@ GOOD_SYMBOLS = {"PM", "MO", "ABBV", "ABT", "KO",
 
 # 結合（重複削除）
 NY_DOW_SP_SYMBOLS = NY_DOW_SYMBOLS | NASDAQ_100_SYMBOLS | SP_100_SYMBOLS
-TARGET_SYMBOLS = NY_DOW_SP_SYMBOLS & GOOD_SYMBOLS
+# TARGET_SYMBOLS = NY_DOW_SP_SYMBOLS & GOOD_SYMBOLS
+TARGET_SYMBOLS = NY_DOW_SP_SYMBOLS
 
 
 class Rakuten():
 
     def get_rakuten_stocks(self):
         """
-        楽天信託で取り扱っている株式情報（取扱が"○"）をpandasのDataFrame形式で返却します。
+        楽天信託で取り扱っている株式情報（取扱が"○"）を
+        今日（UTC）から３０日間分のデータを
+        pandasのDataFrame形式で返却します。
 
-        # 楽天証券 米国株式 CSV取得コマンド
-        curl -O https://www.trkd-asia.com/rakutensec/exportcsvus?name=
-        &r1=on&all=on&vall=on&forwarding=na&target=0&theme=na&returns=na&head_office=na&sector=na
         # CSVデータ 抜粋
         現地コード,銘柄名(English),銘柄名,市場,業種,取扱
         AMZN,"AMAZON.COM, INC.",アマゾン・ドット・コム,NASDAQ,小売,○
@@ -85,19 +88,44 @@ class Rakuten():
         AAPL,APPLE INC.,アップル,NASDAQ,コンピュータ関連,○
         ：
         """
+        df_rakuten = pd.read_csv(self.get_rakuten_csv())
+        now = datetime.utcfromtimestamp(time.time())
+        days30_ago = now - timedelta(days=30)
+
+        return df_rakuten, days30_ago, now
+
+    def get_rakuten_csv(self):
+        """
+        楽天証券 米国株式 からCSVをダウンロードする。
+
+        # 楽天証券 米国株式 CSV取得コマンド
+        curl -O https://www.trkd-asia.com/rakutensec/exportcsvus?name=
+        &r1=on&all=on&vall=on&forwarding=na&target=0&theme=na&returns=na&head_office=na&sector=na
+        """
         CSV_FILE_PATH = "./csv/rakuten_us_stock.csv"
-        df_rakuten = pd.read_csv(CSV_FILE_PATH)
-        return df_rakuten
+        # TODO CSV_FILE_FILEにCSVをダウンロードする。
+
+        return CSV_FILE_PATH
+
+    def notify_rsi_under_20(self, symbol, candle):
+        # TODO RSI/RSCを計算する
+        # RSI が 20 % 以下の場合にLINE通知する
+        pass
 
 
-r = Rakuten()
-df = r.get_rakuten_stocks()
+# main
+if __name__ == '__main__':
+    r = Rakuten()
+    df, start, end = r.get_rakuten_stocks()
 
-start = datetime(2018, 6, 21)
-end = datetime(2018, 6, 22)
+    symbols = set(df["現地コード"]) & TARGET_SYMBOLS
 
-symbols = set(df["現地コード"]) & TARGET_SYMBOLS
-
-for symbol in TARGET_SYMBOLS:
-    df_rakuten_candle = web.DataReader(symbol, 'morningstar', start, end)
-    print(df_rakuten_candle)
+    for symbol in TARGET_SYMBOLS:
+        try:
+            df_rakuten_candle = web.DataReader(
+                symbol, 'morningstar', start, end)
+            r.notify_rsi_under_20(symbol, df_rakuten_candle)
+        except ValueError as ve:
+            msg = "\[{}\] is \[{}\]".format(symbol, ve)
+            print(msg)
+        print(df_rakuten_candle)
